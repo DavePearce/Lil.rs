@@ -1,6 +1,10 @@
 use std::iter::Peekable;
 use std::str::CharIndices;
 
+// =================================================================
+// Token
+// =================================================================
+
 #[derive(PartialEq)]
 pub enum TokenType {
     Identifier,
@@ -23,6 +27,20 @@ pub struct Token<'a> {
     pub content : &'a str
 }
 
+impl<'a> Token<'a> {
+    /// Get the integer payload associated with this token, assuming
+    /// it has Integer kind.
+    pub fn as_int(&self) -> i32 {
+	// Can only call this method on integer tokens.
+	assert!(self.kind == TokenType::Integer);
+	// Parse conents (expecting integer)
+	return self.content.parse().unwrap();
+    }
+}
+
+// =================================================================
+// Lexer
+// =================================================================
 
 /// Provides machinery for splitting up a string slice into a sequence
 /// of tokens.
@@ -160,31 +178,37 @@ fn test_02() {
 #[test]
 fn test_02b() {
     let mut l = Lexer::new("  1");
-    assert!(l.next().unwrap().kind == TokenType::Integer);
+    assert!(l.next().unwrap().as_int() == 1);
 }
 
 #[test]
 fn test_03() {
     let mut l = Lexer::new("1234");
-    assert!(l.next().unwrap().kind == TokenType::Integer);
+    assert!(l.next().unwrap().as_int() == 1234);
 }
 
 #[test]
 fn test_03b() {
     let mut l = Lexer::new("1234 ");
-    assert!(l.next().unwrap().kind == TokenType::Integer);
+    assert!(l.next().unwrap().as_int() == 1234);
 }
 
 #[test]
-fn test_0c() {
+fn test_03c() {
     let mut l = Lexer::new("1234_");
     assert!(l.next().unwrap().kind == TokenType::Integer);
 }
 
 #[test]
-fn test_0d() {
+fn test_03d() {
     let mut l = Lexer::new("1234X");
-    assert!(l.next().unwrap().kind == TokenType::Integer);
+    assert!(l.next().unwrap().as_int() == 1234);
+}
+
+#[test]
+fn test_03e() {
+    let mut l = Lexer::new("1234 12");
+    assert!(l.next().unwrap().as_int() == 1234);
 }
 
 // Identifiers
