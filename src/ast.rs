@@ -2,7 +2,7 @@
 /// standard statement kinds are provided, including `if`, `while`,
 /// `for`, etc.
 pub enum Stmt {
-    Assert(Expr)	
+    Assert(Expr)
 }
 
 /// Represents an expression in the source code of a While
@@ -15,5 +15,5 @@ pub enum Expr {
     Variable(String),
     BooleanLiteral(bool),
     IntegerLiteral(i32),
-    IntegerAddition(Box<Expr>,Box<Expr>),    
+    IntegerAddition(Box<Expr>,Box<Expr>),
 }
