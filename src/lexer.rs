@@ -7,12 +7,23 @@ use std::str::CharIndices;
 
 #[derive(PartialEq)]
 pub enum TokenType {
+    Equal,
+    EqualEqual,
     Identifier,
     If,
+    Int,
     Integer,
     LeftBrace,
-    RightBrace,
-    While
+    LeftSquare,
+    Minus,
+    Plus,
+    RightBrace,    
+    RightSlash,
+    RightSlashSlash,
+    RightSquare,
+    Star,
+    While,
+    Void
 }
 
 /// Represents a single token generated from a string slice.  This
