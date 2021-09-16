@@ -50,9 +50,7 @@ pub struct Lexer<'a> {
     /// String slice being tokenized
     input: &'a str,
     /// Peekable interator into characters
-    chars: Peekable<CharIndices<'a>>,
-    /// Offset from sequence start
-    offset: usize
+    chars: Peekable<CharIndices<'a>>
 }
 
 /// An acceptor determines whether or not a character is part of a
@@ -66,7 +64,7 @@ impl<'a> Lexer<'a> {
         let chars = input.char_indices().peekable();
         // Construct lexer
         return Self {
-            input, chars, offset: 0
+            input, chars
         }
     }
 
@@ -92,11 +90,9 @@ impl<'a> Lexer<'a> {
     /// character.  The actual work is offloaded to a helper based on
     /// this.
     fn scan(&mut self, start: usize, ch: char) -> Option<Token> {
-        let end : usize;
-        let kind : TokenType;
         // Switch on first character of token
         if ch.is_whitespace() {
-            self.scan_whitespace(start)
+            self.scan_whitespace()
         } else if ch.is_digit(10) {
             self.scan_integer(start)
         } else if is_identifier_start(ch)  {
@@ -108,9 +104,9 @@ impl<'a> Lexer<'a> {
 
     /// Scan all whitespace from a given starting point, then
     /// recursively scan an actual token.
-    fn scan_whitespace(&mut self, start: usize) -> Option<Token> {
+    fn scan_whitespace(&mut self) -> Option<Token> {
         // Drop all following whitespace
-        self.scan_whilst(start, |c| c.is_whitespace());
+        self.scan_whilst(|c| c.is_whitespace());
         // Scan an actual token
         self.next()
     }
@@ -118,14 +114,14 @@ impl<'a> Lexer<'a> {
     /// Scan all digits from a given starting point.
     fn scan_integer(&mut self, start: usize) -> Option<Token> {
         let kind = TokenType::Integer;
-        let end = self.scan_whilst(start,|c| c.is_digit(10));
+        let end = self.scan_whilst(|c| c.is_digit(10));
         let content = &self.input[start..end];
         Some(Token{kind,start,content})
     }
 
     /// Scan an identifier or keyword.
     fn scan_identifier_or_keyword(&mut self, start: usize) -> Option<Token> {
-        let end = self.scan_whilst(start,is_identifier_middle);
+        let end = self.scan_whilst(is_identifier_middle);
         let content = &self.input[start..end];
         let kind = match content {
             "if" => {
@@ -164,14 +160,12 @@ impl<'a> Lexer<'a> {
     /// Gobble all characters matched by an acceptor.  For example, we
     /// might want to continue matching digits until we encounter
     /// something which isn't a digit (or is the end of the file).
-    fn scan_whilst(&mut self, offset: usize, pred : Acceptor) -> usize {
+    fn scan_whilst(&mut self, pred : Acceptor) -> usize {
         // Continue reading whilst we're still matching characters
         while let Some((o,c)) = self.chars.peek() {
             if !pred(*c) {
                 // If we get here, then bumped into something which is
                 // not part of this token.
-                let content = &self.input[offset .. *o];
-                // Done
                 return *o;
             }
             // Move to next character
