@@ -7,24 +7,55 @@ use std::str::CharIndices;
 
 #[derive(PartialEq)]
 pub enum TokenType {
+    Ampersand,
+    AmpersandAmpersand,
+    Assert,
+    Bar,
+    BarBar,
+    Bool,
+    Break,
+    Case,
     Colon,
+    Continue,
+    Default,
+    Do,
     Dot,
+    Delete,
+    Else,
     Equal,
     EqualEqual,
+    False,
+    For,
     Identifier,
     If,
     Int,
     Integer,
+    LeftAngle,
+    LeftAngleEquals,    
     LeftBrace,
+    LeftCurly,
     LeftSquare,
     Minus,
+    MinusGreater,
+    New,
+    Null,
+    Percent,
     Plus,
-    RightBrace,    
+    Return,
+    RightAngle,
+    RightAndleEquals,
+    RightBrace,
+    RightCurly,
     RightSlash,
     RightSlashSlash,
     RightSquare,
+    Shreak,    
+    ShreakEquals,
     SemiColon,
+    Switch,
     Star,
+    True,
+    Type,
     While,
     Void
 }
@@ -138,11 +169,68 @@ impl<'a> Lexer<'a> {
         let end = self.scan_whilst(is_identifier_middle);
         let content = &self.input[start..end];
         let kind = match content {
+	    "assert" => {
+                TokenType::Assert
+            }
+	    "bool" => {
+                TokenType::Bool
+            }
+	    "break" => {
+                TokenType::Break
+            }
+	    "case" => {
+                TokenType::Case
+            }
+	    "continue" => {
+                TokenType::Continue
+            }
+	    "default" => {
+                TokenType::Default
+            }
+	    "Do" => {
+                TokenType::Do
+            }
+	    "delete" => {
+                TokenType::Delete
+            }
+	    "else" => {
+                TokenType::Else
+            }
+	    "false" => {
+                TokenType::False
+            }
+	    "for" => {
+                TokenType::For
+            }
             "if" => {
                 TokenType::If
             }
+	    "int" => {
+                TokenType::Int
+            }
+	    "new" => {
+                TokenType::New
+            }
+	    "null" => {
+                TokenType::Null
+            }
+	    "return" => {
+                TokenType::Return
+            }
+	    "switch" => {
+                TokenType::Switch
+            }
+	    "true" => {
+                TokenType::True
+            }
+	    "type" => {
+                TokenType::Type
+            }
             "while" => {
                 TokenType::While
+            }
+	    "void" => {
+                TokenType::Void
             }
             _ => {
                 TokenType::Identifier
@@ -155,13 +243,93 @@ impl<'a> Lexer<'a> {
     fn scan_operator(&self, start: usize, ch: char) -> Option<Token> {
         let end : usize;
         let kind = match ch {
+	    '&' => {
+		// FIXME: &&
+		end = start + 1;
+                TokenType::Ampersand
+	    }
+	    '|' => {
+		// FIXME: ||
+		end = start + 1;
+                TokenType::Bar
+	    }
+	    ':' => {
+		end = start + 1;
+                TokenType::Colon
+	    }
+	    '.' => {
+		end = start + 1;
+                TokenType::Dot
+	    }
+	    '=' => {
+		// FIXME: ==		
+		end = start + 1;
+                TokenType::Equal
+	    }
+	    '<' => {
+		// FIXME: <=
+                end = start + 1;
+                TokenType::LeftAngle
+            }
             '(' => {
                 end = start + 1;
                 TokenType::LeftBrace
             }
-            ')' => {
+	    '{' => {
+                end = start + 1;
+                TokenType::LeftCurly
+            }
+	    '[' => {
+                end = start + 1;
+                TokenType::LeftSquare
+            }
+	    '-' => {
+		// FIXME: ->
+                end = start + 1;
+                TokenType::Minus
+            }
+	    '%' => {
+                end = start + 1;
+                TokenType::Percent
+            }
+	    '+' => {
+                end = start + 1;
+                TokenType::Plus
+            }
+            '>' => {
+		// FIXME: >=
+                end = start + 1;
+                TokenType::RightAngle
+            }
+	    ')' => {
                 end = start + 1;
                 TokenType::RightBrace
+            }
+	    '}' => {
+                end = start + 1;
+                TokenType::RightCurly
+            }
+	    '/' => {
+		// FIXME: //
+                end = start + 1;
+                TokenType::RightSlash
+            }
+	    ']' => {
+                end = start + 1;
+                TokenType::RightSquare
+            }
+	    ';' => {
+		end = start + 1;
+                TokenType::SemiColon
+	    }
+	    '!' => {
+		// FIXME: != 
+                end = start + 1;
+                TokenType::Shreak
+            }
+	    '*' => {
+                end = start + 1;
+                TokenType::Star
             }
             _ => {
                 return None;
