@@ -5,7 +5,7 @@ use std::str::CharIndices;
 // Token
 // =================================================================
 
-#[derive(PartialEq)]
+#[derive(Clone,Copy,PartialEq)]
 pub enum TokenType {
     Ampersand,
     AmpersandAmpersand,
@@ -22,6 +22,7 @@ pub enum TokenType {
     Dot,
     Delete,
     Else,
+    EOF,
     Equal,
     EqualEqual,
     False,
@@ -62,6 +63,7 @@ pub enum TokenType {
 
 /// Represents a single token generated from a string slice.  This
 /// identifies where the token starts and ends in the original slice.
+#[derive(Clone,Copy)]
 pub struct Token<'a> {
     /// Type of the token
     pub kind : TokenType,
@@ -85,6 +87,10 @@ impl<'a> Token<'a> {
     }
 }
 
+/// Represents the end of the input stream.  This is helpful because
+/// it allows us to avoid using `Option<>` everywhere.
+const EOF : Token<'static> = Token{kind: TokenType::EOF,start:usize::MAX,content: ""};
+
 // =================================================================
 // Lexer
 // =================================================================
@@ -95,7 +101,9 @@ pub struct Lexer<'a> {
     /// String slice being tokenized
     input: &'a str,
     /// Peekable interator into characters
-    chars: Peekable<CharIndices<'a>>
+    chars: Peekable<CharIndices<'a>>,
+    /// Lookahead
+    lookahead: Option<Token<'a>>
 }
 
 /// An acceptor determines whether or not a character is part of a
@@ -109,13 +117,25 @@ impl<'a> Lexer<'a> {
         let chars = input.char_indices().peekable();
         // Construct lexer
         return Self {
-            input, chars
+            input, chars, lookahead: None
         }
     }
 
+    /// Peek at the next token in the sequence, or none if we have
+    /// reached the end.
+    pub fn peek(&mut self) -> Token<'a> {
+	// Check whether lookahead already available
+	if self.lookahead.is_none() {
+	    // Lookahead not initialised, so physically read token.
+	    self.lookahead = Some(self.next())
+	}
+	//
+	self.lookahead.unwrap()
+    }
+    
     /// Get the next token in the sequence, or none if we have reached
     /// the end.
-    pub fn next(&mut self) -> Option<Token> {
+    pub fn next(&mut self) -> Token<'a> {
         // Skip any preceeding whitespace
         //self.skipt_whitespace();
         // Try and extract next character
@@ -123,7 +143,7 @@ impl<'a> Lexer<'a> {
         // Sanity check it
         match n {
             None => {
-                None
+                EOF
             }
             Some((offset,ch)) => {
                 self.scan(offset,ch)
@@ -134,7 +154,7 @@ impl<'a> Lexer<'a> {
     /// Begin process of scanning a token based on its first
     /// character.  The actual work is offloaded to a helper based on
     /// this.
-    fn scan(&mut self, start: usize, ch: char) -> Option<Token> {
+    fn scan(&mut self, start: usize, ch: char) -> Token<'a> {
         // Switch on first character of token
         if ch.is_whitespace() {
             self.scan_whitespace()
@@ -149,7 +169,7 @@ impl<'a> Lexer<'a> {
 
     /// Scan all whitespace from a given starting point, then
     /// recursively scan an actual token.
-    fn scan_whitespace(&mut self) -> Option<Token> {
+    fn scan_whitespace(&mut self) -> Token<'a> {
         // Drop all following whitespace
         self.scan_whilst(|c| c.is_whitespace());
         // Scan an actual token
@@ -157,15 +177,15 @@ impl<'a> Lexer<'a> {
     }
 
     /// Scan all digits from a given starting point.
-    fn scan_integer(&mut self, start: usize) -> Option<Token> {
+    fn scan_integer(&mut self, start: usize) -> Token<'a> {
         let kind = TokenType::Integer;
         let end = self.scan_whilst(|c| c.is_digit(10));
         let content = &self.input[start..end];
-        Some(Token{kind,start,content})
+        Token{kind,start,content}
     }
 
     /// Scan an identifier or keyword.
-    fn scan_identifier_or_keyword(&mut self, start: usize) -> Option<Token> {
+    fn scan_identifier_or_keyword(&mut self, start: usize) -> Token<'a> {
         let end = self.scan_whilst(is_identifier_middle);
         let content = &self.input[start..end];
         let kind = match content {
@@ -236,11 +256,11 @@ impl<'a> Lexer<'a> {
                 TokenType::Identifier
             }
         };
-        Some(Token{kind,start,content})
+        Token{kind,start,content}
     }
 
     /// Scan an operator from a given starting point.
-    fn scan_operator(&self, start: usize, ch: char) -> Option<Token> {
+    fn scan_operator(&self, start: usize, ch: char) -> Token<'a> {
         let end : usize;
         let kind = match ch {
 	    '&' => {
@@ -332,11 +352,11 @@ impl<'a> Lexer<'a> {
                 TokenType::Star
             }
             _ => {
-                return None;
+                return EOF;
             }
         };
         let content = &self.input[start..end];
-        Some(Token{kind,start,content})
+        Token{kind,start,content}
     }
 
     /// Gobble all characters matched by an acceptor.  For example, we
