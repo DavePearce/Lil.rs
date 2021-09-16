@@ -7,6 +7,8 @@ use std::str::CharIndices;
 
 #[derive(PartialEq)]
 pub enum TokenType {
+    Colon,
+    Dot,
     Equal,
     EqualEqual,
     Identifier,
@@ -21,6 +23,7 @@ pub enum TokenType {
     RightSlash,
     RightSlashSlash,
     RightSquare,
+    SemiColon,
     Star,
     While,
     Void
