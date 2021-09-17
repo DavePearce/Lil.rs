@@ -63,7 +63,7 @@ pub enum TokenType {
 
 /// Represents a single token generated from a string slice.  This
 /// identifies where the token starts and ends in the original slice.
-#[derive(Clone,Copy)]
+#[derive(Clone,Copy,PartialEq)]
 pub struct Token<'a> {
     /// Type of the token
     pub kind : TokenType,
@@ -136,19 +136,28 @@ impl<'a> Lexer<'a> {
     /// Get the next token in the sequence, or none if we have reached
     /// the end.
     pub fn next(&mut self) -> Token<'a> {
-        // Skip any preceeding whitespace
-        //self.skipt_whitespace();
-        // Try and extract next character
-        let n = self.chars.next();
-        // Sanity check it
-        match n {
-            None => {
-                EOF
-            }
-            Some((offset,ch)) => {
-                self.scan(offset,ch)
-            }
-        }
+	// Check whether lookahead available
+	match self.lookahead {
+	    Some(t) => {
+		// Reset lookahead
+		self.lookahead = None;
+		// Return it
+		t
+	    }
+	    None => {
+		// Try and extract next character
+		let n = self.chars.next();
+		// Sanity check it
+		match n {
+		    None => {
+			EOF
+		    }
+		    Some((offset,ch)) => {
+			self.scan(offset,ch)
+		    }
+		}
+	    }
+	}
     }
 
     /// Begin process of scanning a token based on its first
@@ -396,55 +405,64 @@ fn is_identifier_middle(c: char) -> bool {
 #[test]
 fn test_01() {
     let mut l = Lexer::new("");
-    assert!(l.next().is_none());
+    assert!(l.peek() == EOF);
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_02() {
     let mut l = Lexer::new(" ");
-    assert!(l.next().is_none());
+    assert!(l.peek() == EOF);
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_03() {
     let mut l = Lexer::new("  ");
-    assert!(l.next().is_none());
+    assert!(l.peek() == EOF);
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_04() {
     let mut l = Lexer::new("\n");
-    assert!(l.next().is_none());
+    assert!(l.peek() == EOF);
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_05() {
     let mut l = Lexer::new(" \n");
-    assert!(l.next().is_none());
+    assert!(l.peek() == EOF);
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_06() {
     let mut l = Lexer::new("\n ");
-    assert!(l.next().is_none());
+    assert!(l.peek() == EOF);
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_07() {
     let mut l = Lexer::new("\t");
-    assert!(l.next().is_none());
+    assert!(l.peek() == EOF);
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_08() {
     let mut l = Lexer::new("\t ");
-    assert!(l.next().is_none());
+    assert!(l.peek() == EOF);
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_09() {
     let mut l = Lexer::new(" \t");
-    assert!(l.next().is_none());
+    assert!(l.peek() == EOF);
+    assert!(l.next() == EOF);
 }
 
 // Literals
@@ -452,50 +470,62 @@ fn test_09() {
 #[test]
 fn test_10() {
     let mut l = Lexer::new("1");
-    assert!(l.next().unwrap().kind == TokenType::Integer);
-    assert!(l.next().is_none());
+    assert!(l.peek().kind == TokenType::Integer);    
+    assert!(l.next().kind == TokenType::Integer);
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_11() {
     let mut l = Lexer::new("  1");
-    assert!(l.next().unwrap().as_int() == 1);
-    assert!(l.next().is_none());
+    assert!(l.peek().as_int() == 1);    
+    assert!(l.next().as_int() == 1);
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_12() {
     let mut l = Lexer::new("1234");
-    assert!(l.next().unwrap().as_int() == 1234);
-    assert!(l.next().is_none());
+    assert!(l.peek().as_int() == 1234);
+    assert!(l.next().as_int() == 1234);
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_13() {
     let mut l = Lexer::new("1234 ");
-    assert!(l.next().unwrap().as_int() == 1234);
-    assert!(l.next().is_none());
+    assert!(l.peek().as_int() == 1234);
+    assert!(l.next().as_int() == 1234);
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_14() {
     let mut l = Lexer::new("1234_");
-    assert!(l.next().unwrap().kind == TokenType::Integer);
-    assert!(l.next().unwrap().kind == TokenType::Identifier);
+    assert!(l.peek().kind == TokenType::Integer);    
+    assert!(l.next().kind == TokenType::Integer);
+    assert!(l.peek().kind == TokenType::Identifier);
+    assert!(l.next().kind == TokenType::Identifier);
+    assert!(l.peek() == EOF);
 }
 
 #[test]
 fn test_15() {
     let mut l = Lexer::new("1234X");
-    assert!(l.next().unwrap().as_int() == 1234);
-    assert!(l.next().unwrap().kind == TokenType::Identifier);
+    assert!(l.peek().as_int() == 1234);
+    assert!(l.next().as_int() == 1234);
+    assert!(l.peek().kind == TokenType::Identifier);
+    assert!(l.next().kind == TokenType::Identifier);
+    assert!(l.peek() == EOF);
 }
 
 #[test]
 fn test_16() {
     let mut l = Lexer::new("1234 12");
-    assert!(l.next().unwrap().as_int() == 1234);
-    assert!(l.next().unwrap().as_int() == 12);
+    assert!(l.peek().as_int() == 1234);
+    assert!(l.next().as_int() == 1234);
+    assert!(l.peek().as_int() == 12);
+    assert!(l.next().as_int() == 12);
 }
 
 // Identifiers
@@ -503,49 +533,54 @@ fn test_16() {
 #[test]
 fn test_20() {
     let mut l = Lexer::new("abc");
-    let t = l.next().unwrap();
+    let t = l.next();
     assert!(t.kind == TokenType::Identifier);
     assert!(t.content == "abc");
-    assert!(l.next().is_none());
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_21() {
     let mut l = Lexer::new("  abc");
-    let t = l.next().unwrap();
+    assert!(l.peek().kind == TokenType::Identifier);
+    let t = l.next();
     assert!(t.kind == TokenType::Identifier);
     assert!(t.content == "abc");
-    assert!(l.next().is_none());
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_22() {
     let mut l = Lexer::new("_abc");
-    let t = l.next().unwrap();
+    assert!(l.peek().kind == TokenType::Identifier);
+    let t = l.next();
     assert!(t.kind == TokenType::Identifier);
     assert!(t.content == "_abc");
-    assert!(l.next().is_none());
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_23() {
     let mut l = Lexer::new("a_bD12233_");
-    let t = l.next().unwrap();
+    assert!(l.peek().kind == TokenType::Identifier);
+    let t = l.next();
     assert!(t.kind == TokenType::Identifier);
     assert!(t.content == "a_bD12233_");
-    assert!(l.next().is_none());
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_24() {
     let mut l = Lexer::new("_abc cd");
-    let t1 = l.next().unwrap();
+    assert!(l.peek().kind == TokenType::Identifier);
+    let t1 = l.next();
     assert!(t1.kind == TokenType::Identifier);
     assert!(t1.content == "_abc");
-    let t2 = l.next().unwrap();
+    assert!(l.peek().kind == TokenType::Identifier);
+    let t2 = l.next();    
     assert!(t2.kind == TokenType::Identifier);
     assert!(t2.content == "cd");
-    assert!(l.next().is_none());
+    assert!(l.next() == EOF);
 }
 
 // Keywords
@@ -553,15 +588,17 @@ fn test_24() {
 #[test]
 fn test_30() {
     let mut l = Lexer::new("if");
-    assert!(l.next().unwrap().kind == TokenType::If);
-    assert!(l.next().is_none());
+    assert!(l.peek().kind == TokenType::If);
+    assert!(l.next().kind == TokenType::If);
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_31() {
     let mut l = Lexer::new("while");
-    assert!(l.next().unwrap().kind == TokenType::While);
-    assert!(l.next().is_none());
+    assert!(l.peek().kind == TokenType::While);
+    assert!(l.next().kind == TokenType::While);
+    assert!(l.next() == EOF);
 }
 
 // Operators
@@ -569,44 +606,46 @@ fn test_31() {
 #[test]
 fn test_40() {
     let mut l = Lexer::new("(");
-    assert!(l.next().unwrap().kind == TokenType::LeftBrace);
-    assert!(l.next().is_none());
+    assert!(l.peek().kind == TokenType::LeftBrace);
+    assert!(l.next().kind == TokenType::LeftBrace);
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_41() {
     let mut l = Lexer::new("((");
-    let t1 = l.next().unwrap();
-    assert!(t1.kind == TokenType::LeftBrace);
-    let t2 = l.next().unwrap();
-    assert!(t2.kind == TokenType::LeftBrace);
-    assert!(l.next().is_none());
+    assert!(l.peek().kind == TokenType::LeftBrace);
+    assert!(l.next().kind == TokenType::LeftBrace);
+    assert!(l.peek().kind == TokenType::LeftBrace);
+    assert!(l.next().kind == TokenType::LeftBrace);
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_42() {
     let mut l = Lexer::new(")");
-    assert!(l.next().unwrap().kind == TokenType::RightBrace);
+    assert!(l.peek().kind == TokenType::RightBrace);
+    assert!(l.next().kind == TokenType::RightBrace);
 }
 
 #[test]
 fn test_43() {
     let mut l = Lexer::new("))");
-    let t1 = l.next().unwrap();
-    assert!(t1.kind == TokenType::RightBrace);
-    let t2 = l.next().unwrap();
-    assert!(t2.kind == TokenType::RightBrace);
-    assert!(l.next().is_none());
+    assert!(l.peek().kind == TokenType::RightBrace);
+    assert!(l.next().kind == TokenType::RightBrace);
+    assert!(l.peek().kind == TokenType::RightBrace);
+    assert!(l.next().kind == TokenType::RightBrace);
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_44() {
     let mut l = Lexer::new("()");
-    let t1 = l.next().unwrap();
-    assert!(t1.kind == TokenType::LeftBrace);
-    let t2 = l.next().unwrap();
-    assert!(t2.kind == TokenType::RightBrace);
-    assert!(l.next().is_none());
+    assert!(l.peek().kind == TokenType::LeftBrace);
+    assert!(l.next().kind == TokenType::LeftBrace);
+    assert!(l.peek().kind == TokenType::RightBrace);
+    assert!(l.next().kind == TokenType::RightBrace);
+    assert!(l.next() == EOF);
 }
 
 // Combinations
@@ -614,23 +653,23 @@ fn test_44() {
 #[test]
 fn test_60() {
     let mut l = Lexer::new("while(");
-    let t1 = l.next().unwrap();
+    let t1 = l.next();
     assert!(t1.kind == TokenType::While);
     assert!(t1.content == "while");
-    let t2 = l.next().unwrap();
+    let t2 = l.next();
     assert!(t2.kind == TokenType::LeftBrace);
     assert!(t2.content == "(");
-    assert!(l.next().is_none());
+    assert!(l.next() == EOF);
 }
 
 #[test]
 fn test_61() {
     let mut l = Lexer::new("12345(");
-    let t1 = l.next().unwrap();
+    let t1 = l.next();
     assert!(t1.kind == TokenType::Integer);
     assert!(t1.as_int() == 12345);
-    let t2 = l.next().unwrap();
+    let t2 = l.next();
     assert!(t2.kind == TokenType::LeftBrace);
     assert!(t2.content == "(");
-    assert!(l.next().is_none());
+    assert!(l.next() == EOF);
 }
