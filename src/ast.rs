@@ -4,7 +4,7 @@
 pub enum Decl {
     Error,
     TypeAlias(String,Type),
-    Method(String,Type,Vec<Type>,Stmt)
+    Method(String,Type,Vec<(Type,String)>,Stmt)
 }
 
 /// Represents a statement in the source code of a Lil program. Many
