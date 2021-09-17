@@ -1,13 +1,16 @@
 /// Represents a top-level declaration, such as a type alias or a
 /// method declaration.
+#[derive(Debug,PartialEq)]
 pub enum Decl {
-    Alias(String,Type),
+    Error,
+    TypeAlias(String,Type),
     Method(String,Type,Vec<Type>,Stmt)
 }
 
 /// Represents a statement in the source code of a Lil program. Many
 /// standard statement kinds are provided, including `if`, `while`,
 /// `for`, etc.
+#[derive(Debug,PartialEq)]
 pub enum Stmt {
     Assert(Expr),
     Block(Vec<Stmt>),
@@ -20,6 +23,7 @@ pub enum Stmt {
 /// (e.g.  `!e`, `-e`, `|e|`), binary operations (e.g.  `x==y`,
 /// `x!=y`, `x+y`, etc), list expressions (e.g. `ls[i]`, `[1,2,3]`,
 /// etc), record expressions (e.g. `r.f`, `{x: 1, y: 2}`, etc).
+#[derive(Debug,PartialEq)]
 pub enum Expr {
     Variable(String),
     BoolLiteral(bool),
@@ -29,6 +33,7 @@ pub enum Expr {
 
 /// Represents a type descriptor in the source code of a Lil program.
 /// For example, `int` or `int|null` or `{int f}`, etc.
+#[derive(Debug,PartialEq)]
 pub enum Type {
     Null,
     Bool,

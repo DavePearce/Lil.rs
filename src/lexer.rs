@@ -29,6 +29,7 @@ pub enum TokenType {
     For,
     Identifier,
     If,
+    Is,
     Int,
     Integer,
     LeftAngle,
@@ -85,6 +86,11 @@ impl<'a> Token<'a> {
 	// Parse conents (expecting integer)
 	return self.content.parse().unwrap();
     }
+
+    /// Get the string payload associated with this token.
+    pub fn as_string(&self) -> String {
+	return self.content.to_string();
+    }    
 }
 
 /// Represents the end of the input stream.  This is helpful because
@@ -233,6 +239,9 @@ impl<'a> Lexer<'a> {
             }
             "if" => {
                 TokenType::If
+            }
+	    "is" => {
+                TokenType::Is
             }
 	    "int" => {
                 TokenType::Int
