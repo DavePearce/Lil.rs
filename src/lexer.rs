@@ -16,6 +16,7 @@ pub enum TokenType {
     Break,
     Case,
     Colon,
+    Comma,
     Continue,
     Default,
     Do,
@@ -29,8 +30,10 @@ pub enum TokenType {
     For,
     Identifier,
     If,
-    Is,
-    Int,
+    I8,
+    I16,
+    I32,
+    I64,
     Integer,
     LeftAngle,
     LeftAngleEquals,    
@@ -59,6 +62,10 @@ pub enum TokenType {
     True,
     Type,
     While,
+    U8,
+    U16,
+    U32,
+    U64,
     Void
 }
 
@@ -95,7 +102,7 @@ impl<'a> Token<'a> {
 
 /// Represents the end of the input stream.  This is helpful because
 /// it allows us to avoid using `Option<>` everywhere.
-const EOF : Token<'static> = Token{kind: TokenType::EOF,start:usize::MAX,content: ""};
+pub const EOF : Token<'static> = Token{kind: TokenType::EOF,start:usize::MAX,content: ""};
 
 // =================================================================
 // Lexer
@@ -240,12 +247,18 @@ impl<'a> Lexer<'a> {
             "if" => {
                 TokenType::If
             }
-	    "is" => {
-                TokenType::Is
+	    "i8" => {
+                TokenType::I8
             }
-	    "int" => {
-                TokenType::Int
+	    "i16" => {
+                TokenType::I16
             }
+	    "i32" => {
+                TokenType::I32
+            }
+	    "i64" => {
+                TokenType::I64
+            }   
 	    "new" => {
                 TokenType::New
             }
@@ -267,6 +280,18 @@ impl<'a> Lexer<'a> {
             "while" => {
                 TokenType::While
             }
+	    "u8" => {
+                TokenType::U8
+            }
+	    "u16" => {
+                TokenType::U16
+            }
+	    "u32" => {
+                TokenType::U32
+            }
+	    "u64" => {
+                TokenType::U64
+            }	    	    
 	    "void" => {
                 TokenType::Void
             }
@@ -294,6 +319,10 @@ impl<'a> Lexer<'a> {
 	    ':' => {
 		end = start + 1;
                 TokenType::Colon
+	    }
+	    ',' => {
+		end = start + 1;
+                TokenType::Comma
 	    }
 	    '.' => {
 		end = start + 1;
