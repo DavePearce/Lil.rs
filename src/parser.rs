@@ -14,20 +14,25 @@ pub type Result<T> = result::Result<T, ()>;
 
 /// Response for turning a stream of tokens into an Abstract Syntax
 /// Tree and/or producing error messages along the way.
-pub struct Parser<'a> {
+pub struct Parser<'a,T,F>
+where F : FnMut(&'a str) -> T {
     /// Provides access to our token stream.
-    lexer: Lexer<'a>
+    lexer: Lexer<'a>,
+    /// Provides mechanism for source maps
+    mapper : F
+	
 }
 
-impl<'a> Parser<'a> {
+impl<'a,T,F> Parser<'a,T,F>
+where F : FnMut(&'a str) -> T {
    
-    pub fn new(input: &'a str) -> Self {
-	Self { lexer: Lexer::new(input) }
+    pub fn new(input: &'a str, mapper : F) -> Self {
+	Self { lexer: Lexer::new(input), mapper }
     }
     
     /// Parse a declaration from token stream.  This returns `None`
     /// when the end of the stream is reached
-    pub fn parse(&mut self) -> Option<Decl> {
+    pub fn parse(&mut self) -> Option<Decl<T>> {
 	let lookahead = self.lexer.peek();
 	// Check whether stream empty
 	if lookahead == EOF {
@@ -52,7 +57,7 @@ impl<'a> Parser<'a> {
     // =========================================================================    
 
     /// Parse an arbitrary declaration
-    fn parse_decl(&mut self) -> Result<Decl> {
+    fn parse_decl(&mut self) -> Result<Decl<T>> {
 	let lookahead = self.lexer.peek();
 	// Attempt to parse declaration
 	match lookahead.kind {
@@ -66,9 +71,9 @@ impl<'a> Parser<'a> {
     }
     
     /// Parse a type declaration of the from `type name is type;`.
-    pub fn parse_decl_type(&mut self) -> Result<Decl> {
+    pub fn parse_decl_type(&mut self) -> Result<Decl<T>> {
 	// "type"
-	let tok = self.snap(TokenType::Type)?;
+	let start = self.snap(TokenType::Type)?;
 	// Identifier
 	let name = self.parse_identifier()?;
 	// "="
@@ -76,14 +81,18 @@ impl<'a> Parser<'a> {
 	// Type
 	let typ_e : Type = self.parse_type()?;
 	// Semi-colon
-	let _ = self.snap(TokenType::SemiColon)?;
+	let end = self.snap(TokenType::SemiColon)?;
+	// Extract corresponding (sub)slice
+	let slice = &self.lexer.input[start.start .. end.end()];
+	// Apply source map
+	let attr = (self.mapper)(slice);
 	//
-	Ok(Decl::TypeAlias(name,typ_e))
+	Ok(Decl::TypeAlias(name,typ_e,attr))
     }
 
     /// Parse a method declaration of the form `Type name([Type
     /// Identifier]*) Stmt.Block`.
-    pub fn parse_decl_method(&mut self) -> Result<Decl> {
+    pub fn parse_decl_method(&mut self) -> Result<Decl<T>> {
 	// Type
 	let ret_type = self.parse_type()?;
 	// Identifier
@@ -92,8 +101,10 @@ impl<'a> Parser<'a> {
 	let params = self.parse_decl_parameters()?;
 	// "{" [Stmt]* "}"
 	let body = self.parse_stmt_block()?;
+	// Apply source map
+	let attr = (self.mapper)("test");
 	//
-	Ok(Decl::Method(name,ret_type,params,body))
+	Ok(Decl::Method(name,ret_type,params,body,attr))
     }
 
     /// Parse a list of parameter declarations
@@ -386,6 +397,12 @@ impl<'a> Parser<'a> {
     // Helpers
     // =========================================================================        
 
+    // fn source_attr(&self, first : Token<'a>, last: Token<'a>) -> Attributes {
+    // 	let start = first.start;
+    // 	let end = last.end();
+    // 	Attributes{start,end}
+    // }
+    
     /// Match a given token type in the current stream.  If the kind
     /// matches, then the token stream advances.  Otherwise, it
     /// remains at the same position and an error is returned.

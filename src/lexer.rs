@@ -97,7 +97,12 @@ impl<'a> Token<'a> {
     /// Get the string payload associated with this token.
     pub fn as_string(&self) -> String {
 	return self.content.to_string();
-    }    
+    }
+
+    /// Get offset of the last character of this token.
+    pub fn end(&self) -> usize {
+	self.start + self.content.len()
+    }
 }
 
 /// Represents the end of the input stream.  This is helpful because
@@ -112,7 +117,7 @@ pub const EOF : Token<'static> = Token{kind: TokenType::EOF,start:usize::MAX,con
 /// of tokens.
 pub struct Lexer<'a> {
     /// String slice being tokenized
-    input: &'a str,
+    pub input: &'a str,
     /// Peekable interator into characters
     chars: Peekable<CharIndices<'a>>,
     /// Lookahead

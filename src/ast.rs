@@ -4,10 +4,10 @@ use std::vec;
 /// Represents a top-level declaration, such as a type alias or a
 /// method declaration.
 #[derive(Debug,PartialEq)]
-pub enum Decl {
+pub enum Decl<T> {
     Error,
-    TypeAlias(String,Type),
-    Method(String,Type,Vec<Parameter>,Stmt)
+    TypeAlias(String,Type,T),
+    Method(String,Type,Vec<Parameter>,Stmt,T)
 }
 
 /// Represents a statement in the source code of a Lil program. Many
@@ -83,16 +83,16 @@ pub struct Parameter {
 // Debug
 // =============================================================================
 
-impl fmt::Display for Decl {
+impl<T> fmt::Display for Decl<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 	match self {
 	    Decl::Error => {
 		write!(f,"Error()")
 	    }
-	    Decl::TypeAlias(s,t) => {
+	    Decl::TypeAlias(s,t,_) => {
 		write!(f,"Type({},{})",s,t)
 	    }
-	    Decl::Method(n,r,ps,b) => {
+	    Decl::Method(n,r,ps,b,_) => {
 		let pstr = to_string(ps);
 		write!(f,"Method({},{},{},{})",n,r,pstr,b)		       
 	    }
