@@ -6,7 +6,26 @@ use crate::lexer::Token;
 use crate::lexer::TokenType;
 use crate::ast::*;
 
-pub type Result<T> = result::Result<T, ()>;
+// =================================================================
+// Error
+// =================================================================
+
+/// Identifies possible errors stemming from the parser.
+pub struct Error {
+    pub start: usize,
+    pub end: usize,
+    pub message: &'static str    
+}
+
+pub type Result<T> = result::Result<T, Error>;
+
+impl Error {
+    pub fn new<'a>(tok: Token<'a>, message: &'static str) -> Error {
+	let start = tok.start;
+	let end = tok.end();
+	Error{start,end,message}
+    }
+}
 
 // =================================================================
 // Parser
@@ -29,35 +48,13 @@ where F : FnMut(&'a str) -> T {
     pub fn new(input: &'a str, mapper : F) -> Self {
 	Self { lexer: Lexer::new(input), mapper }
     }
-    
-    /// Parse a declaration from token stream.  This returns `None`
-    /// when the end of the stream is reached
-    pub fn parse(&mut self) -> Option<Decl<T>> {
-	let lookahead = self.lexer.peek();
-	// Check whether stream empty
-	if lookahead == EOF {
-	    None
-	} else {
-	    // Attempt to parse declaration
-	    let r = self.parse_decl();
-	    // Decode what happened.
-	    match r {
-		Ok(d) => {
-		    Some(d)
-		}
-		Err(e) => {
-		    Some(Decl::Error)
-		}
-	    }
-	}
-    }
 
     // =========================================================================
     // Declarations
     // =========================================================================    
 
     /// Parse an arbitrary declaration
-    fn parse_decl(&mut self) -> Result<Decl<T>> {
+    pub fn parse_decl(&mut self) -> Result<Decl<T>> {
 	let lookahead = self.lexer.peek();
 	// Attempt to parse declaration
 	match lookahead.kind {
@@ -167,7 +164,7 @@ where F : FnMut(&'a str) -> T {
 		self.parse_stmt_assert()
 	    }
 	    _ => {
-		return Err(());
+		return Err(Error::new(lookahead,"unknown token encountered"));
 	    }
 	};
 	// ";"
@@ -213,7 +210,7 @@ where F : FnMut(&'a str) -> T {
 		Ok(Expr::BoolLiteral(true))
 	    }	    
 	    _ => {
-		Err(())
+		Err(Error::new(lookahead,"unknown token encountered"))
 	    }
 	}
     }
@@ -243,7 +240,7 @@ where F : FnMut(&'a str) -> T {
 	match lookahead.kind {
 	    TokenType::EOF => {
 		// Something went wrong
-		Err(())
+		Err(Error::new(lookahead,"unexpected end-of-file"))
 	    }
 	    TokenType::Ampersand => {
 		// Looks like a reference type
@@ -375,7 +372,7 @@ where F : FnMut(&'a str) -> T {
 		Type::Void
 	    }
 	    _ => {
-		return Err(());
+		return Err(Error::new(lookahead,"unknown token encountered"));
 	    }
 	};
 	// Move over it
@@ -408,16 +405,16 @@ where F : FnMut(&'a str) -> T {
     /// remains at the same position and an error is returned.
     fn snap(&mut self, kind : TokenType) -> Result<Token<'a>> {
 	// Peek at the next token
-	let t = self.lexer.peek();
+	let lookahead = self.lexer.peek();
 	// Check it!
-	if t.kind == kind {
+	if lookahead.kind == kind {
 	    // Accept it
 	    self.lexer.next();
 	    //
-	    Ok(t)
+	    Ok(lookahead)
 	} else {
 	    // Reject
-	    Err(())
+	    Err(Error::new(lookahead,"expected one thing, found another"))
 	}
     }
 }
