@@ -14,7 +14,7 @@ pub type Result<T> = result::Result<T, ()>;
 
 /// Response for turning a stream of tokens into an Abstract Syntax
 /// Tree and/or producing error messages along the way.
-struct Parser<'a> {
+pub struct Parser<'a> {
     /// Provides access to our token stream.
     lexer: Lexer<'a>
 }
@@ -27,7 +27,7 @@ impl<'a> Parser<'a> {
     
     /// Parse a declaration from token stream.  This returns `None`
     /// when the end of the stream is reached
-    fn parse(&mut self) -> Option<Decl> {
+    pub fn parse(&mut self) -> Option<Decl> {
 	let lookahead = self.lexer.peek();
 	// Check whether stream empty
 	if lookahead == EOF {
@@ -97,8 +97,8 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse a list of parameter declarations
-    pub fn parse_decl_parameters(&mut self) -> Result<Vec<(Type,String)>> {
-	let mut params : Vec<(Type,String)> = vec![];
+    pub fn parse_decl_parameters(&mut self) -> Result<Vec<Parameter>> {
+	let mut params : Vec<Parameter> = vec![];
 	// "("
 	self.snap(TokenType::LeftBrace)?;
 	// Keep going until a right brace
@@ -113,7 +113,7 @@ impl<'a> Parser<'a> {
 	    // Identifier
 	    let f_name = self.parse_identifier()?;
 	    // 
-	    params.push((f_type,f_name));
+	    params.push(Parameter{declared:f_type,name:f_name});
 	}
 	// Done
 	Ok(params)
