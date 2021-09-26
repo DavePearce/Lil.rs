@@ -4,6 +4,7 @@ use std::io::Write;
 mod ast;
 mod lexer;
 mod parser;
+mod typer;
 mod source_map;
 
 use crate::parser::Parser;
@@ -34,7 +35,16 @@ fn repl() {
 	if d.is_err() {
 	    print_error(line,d.err().unwrap());
 	} else {
-	    println!("DECL: {}",d.ok().unwrap());
+	    let ast = d.ok().unwrap();
+	    println!("Parsed: {}",&ast);
+	    // Now type check it!
+	    let typing = typer::type_check(ast);
+	    //
+	    if typing.is_err() {
+		println!("Type checking failed");
+	    } else {
+		println!("Type checking suceeded");
+	    }
 	}	  
 	//
 	input.clear();
