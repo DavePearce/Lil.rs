@@ -33,8 +33,8 @@ impl Error {
 
 /// Response for turning a stream of tokens into an Abstract Syntax
 /// Tree and/or producing error messages along the way.
-pub struct Parser<'a,T,F>
-where F : FnMut(&'a str) -> T {
+pub struct Parser<'a, F>
+where F : FnMut(usize,&'a str) {
     /// Provides access to our token stream.
     lexer: Lexer<'a>,
     /// Provides mechanism for source maps
@@ -42,8 +42,8 @@ where F : FnMut(&'a str) -> T {
 	
 }
 
-impl<'a,T,F> Parser<'a,T,F>
-where F : FnMut(&'a str) -> T {
+impl<'a,F> Parser<'a,F>
+where F : FnMut(usize,&'a str) {
    
     pub fn new(input: &'a str, mapper : F) -> Self {
 	Self { lexer: Lexer::new(input), mapper }
@@ -54,7 +54,7 @@ where F : FnMut(&'a str) -> T {
     // =========================================================================    
 
     /// Parse an arbitrary declaration
-    pub fn parse_decl(&mut self) -> Result<Decl<T>> {
+    pub fn parse_decl(&mut self) -> Result<Decl> {
 	let lookahead = self.lexer.peek();
 	// Attempt to parse declaration
 	match lookahead.kind {
@@ -68,7 +68,7 @@ where F : FnMut(&'a str) -> T {
     }
     
     /// Parse a type declaration of the from `type name is type;`.
-    pub fn parse_decl_type(&mut self) -> Result<Decl<T>> {
+    pub fn parse_decl_type(&mut self) -> Result<Decl> {
 	// "type"
 	let start = self.snap(TokenType::Type)?;
 	// Identifier
@@ -82,14 +82,14 @@ where F : FnMut(&'a str) -> T {
 	// Extract corresponding (sub)slice
 	let slice = &self.lexer.input[start.start .. end.end()];
 	// Apply source map
-	let attr = (self.mapper)(slice);
+	//let attr = (self.mapper)(slice);
 	//
-	Ok(Decl::TypeAlias(name,typ_e,attr))
+	Ok(Decl::TypeAlias(name,typ_e))
     }
 
     /// Parse a method declaration of the form `Type name([Type
     /// Identifier]*) Stmt.Block`.
-    pub fn parse_decl_method(&mut self) -> Result<Decl<T>> {
+    pub fn parse_decl_method(&mut self) -> Result<Decl> {
 	// Type
 	let ret_type = self.parse_type()?;
 	// Identifier
@@ -99,9 +99,9 @@ where F : FnMut(&'a str) -> T {
 	// "{" [Stmt]* "}"
 	let body = self.parse_stmt_block()?;
 	// Apply source map
-	let attr = (self.mapper)("test");
+	//let attr = (self.mapper)("test");
 	//
-	Ok(Decl::Method(name,ret_type,params,body,attr))
+	Ok(Decl::Method(name,ret_type,params,body))
     }
 
     /// Parse a list of parameter declarations

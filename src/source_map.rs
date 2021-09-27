@@ -5,25 +5,21 @@ use std::collections::HashMap;
 #[derive(Clone,Debug,PartialEq)]
 pub struct SourceMap<'a> {
     input : &'a str,
-    map : Vec<&'a str>
+    map : HashMap<usize,&'a str>
 }
 
 impl<'a> SourceMap<'a> {
     pub fn new(input: &'a str) -> Self {
-	let map = Vec::new();
+	let map = HashMap::new();
 	Self{input,map}
     }
     
     /// Map a given source string to a unique identifier which can be
     /// subsequently used to identify the corresponding AST syntactic
     /// element.
-    pub fn map(&mut self, element: &'a str) -> usize {
-	// Allocate index
-	let index = self.map.len();
-	// Store details
-	self.map.push(element);
-	// Done
-	index
+    pub fn map(&mut self, index: usize, element: &'a str) {
+	// // Store details
+	self.map.insert(index,element);
     }
 }
 

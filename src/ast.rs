@@ -4,16 +4,16 @@ use std::vec;
 /// Represents a top-level declaration, such as a type alias or a
 /// method declaration.
 #[derive(Debug,PartialEq)]
-pub enum Decl<T> {
+pub enum Decl {
     Error,
-    TypeAlias(String,Type,T),
-    Method(String,Type,Vec<Parameter>,Stmt,T)
+    TypeAlias(String,Type),
+    Method(String,Type,Vec<Parameter>,Stmt)
 }
 
 /// Represents a statement in the source code of a Lil program. Many
 /// standard statement kinds are provided, including `if`, `while`,
 /// `for`, etc.
-#[derive(Debug,PartialEq)]
+#[derive(Clone,Debug,PartialEq)]
 pub enum Stmt {
     Assert(Expr),
     Block(Vec<Stmt>),
@@ -25,7 +25,7 @@ pub enum Stmt {
 /// (e.g.  `!e`, `-e`, `|e|`), binary operations (e.g.  `x==y`,
 /// `x!=y`, `x+y`, etc), list expressions (e.g. `ls[i]`, `[1,2,3]`,
 /// etc), record expressions (e.g. `r.f`, `{x: 1, y: 2}`, etc).
-#[derive(Debug,PartialEq)]
+#[derive(Clone,Debug,PartialEq)]
 pub enum Expr {
     Variable(String),
     BoolLiteral(bool),
@@ -83,16 +83,16 @@ pub struct Parameter {
 // Debug
 // =============================================================================
 
-impl<T> fmt::Display for Decl<T> {
+impl fmt::Display for Decl {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 	match self {
 	    Decl::Error => {
 		write!(f,"Error()")
 	    }
-	    Decl::TypeAlias(s,t,_) => {
+	    Decl::TypeAlias(s,t) => {
 		write!(f,"Type({},{})",s,t)
 	    }
-	    Decl::Method(n,r,ps,b,_) => {
+	    Decl::Method(n,r,ps,b) => {
 		let pstr = to_string(ps);
 		write!(f,"Method({},{},{},{})",n,r,pstr,b)		       
 	    }
