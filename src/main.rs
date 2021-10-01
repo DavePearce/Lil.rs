@@ -7,12 +7,14 @@ mod parser;
 mod typer;
 mod source_map;
 mod type_map;
+mod error;
 
 use crate::parser::Parser;
 use crate::parser::Error;
 use crate::typer::TypeChecker;
 use crate::source_map::SourceMap;
 use crate::type_map::TypeMap;
+use crate::error::SyntaxError;
 
 fn main() {
     repl();
@@ -46,7 +48,7 @@ fn repl() {
 	    let typing = TypeChecker::new(|i,t| type_map.map(i,t)).check(&ast);
 	    //
 	    if typing.is_err() {
-		println!("Type checking failed");
+		print_syntax_error(&typing.err().unwrap(), &source_map);
 	    } else {
 		println!("Type checking suceeded");
 	    }
@@ -60,13 +62,29 @@ fn print_error(line: &str, err: Error) {
     println!("error:{}: {}",err.start,err.message);
     println!();
     print!("{}",line);
-    let indent = to_whitespace(line,err.start);
+    print_highlight(line,err.start,err.end);
+}
+
+fn print_syntax_error<'a>(err: &SyntaxError, map: &SourceMap<'a>) {
+    println!("error: {}",err.errno);
+    // Determine the highlight
+    let hl = map.get_highlight(err.node);
+    // Print the enclosing line
+    print!("{}",hl.line);
+    // Highlight relevant section
+    print_highlight(hl.line,hl.start,hl.end);
+}
+
+fn print_highlight<'a>(line: &'a str, start: usize, end: usize) {
+    // Convert the given line into equivalent whitespace
+    let indent = to_whitespace(line,start);
+    // Print out preamble
     print!("{}",indent);
     //
-    for i in err.start .. err.end {
+    for i in start .. end {
 	print!("^");
     }
-    println!("");
+    println!("");    
 }
 
 /// Convert the start of a given line into corresponding whitespace.

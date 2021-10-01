@@ -1,12 +1,13 @@
 use std::result;
 use std::collections::HashMap;
 use crate::ast::*;
+use crate::error::*;
 
 // =================================================================
 // Error
 // =================================================================
 
-pub type Result<T> = result::Result<T, ()>;
+pub type Result<T> = result::Result<T, SyntaxError>;
 
 // =================================================================
 // Type Checker
@@ -41,7 +42,7 @@ where F : FnMut(usize,Type) {
 	    Decl::Method(name,ret,params,body) => {
 	    	self.check_method(name,ret,params,body)
 	    }
-	    _ => Err(())
+	    _ => Err(internal_failure(0,"unknown declaration"))
 	}
     }
     
@@ -79,7 +80,7 @@ where F : FnMut(usize,Type) {
 	    Stmt::Block(stmts) => {
 		self.check_block(env,&stmts)
 	    }
-	    _ => Err(())
+	    _ => Err(internal_failure(0,"unknown statement"))
 	}
     }
 
@@ -109,7 +110,7 @@ where F : FnMut(usize,Type) {
 	    Expr::BoolLiteral(lit) => {
 		self.check_boolean_literal(env,lit)
 	    }
-	    _ => Err(())
+	    _ => Err(internal_failure(0,"unknown expression"))
 	}
     }
 
@@ -163,7 +164,7 @@ where F : FnMut(usize,Type) {
 	if sup == sub {
 	    Ok(())
 	} else {
-	    Err(())
+	    Err(expected_subtype(0))
 	}
     }
 }

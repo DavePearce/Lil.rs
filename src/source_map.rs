@@ -4,8 +4,8 @@ use std::collections::HashMap;
 /// tree.
 #[derive(Clone,Debug,PartialEq)]
 pub struct SourceMap<'a> {
-    input : &'a str,
-    map : HashMap<usize,&'a str>
+    pub input : &'a str,
+    pub map : HashMap<usize,&'a str>
 }
 
 impl<'a> SourceMap<'a> {
@@ -21,7 +21,32 @@ impl<'a> SourceMap<'a> {
 	// // Store details
 	self.map.insert(index,element);
     }
+
+    pub fn get_highlight(&self, index: usize) -> Highlight {
+	// Lookup given node in the map
+	let val = self.map.get(&index);
+	// See what we got
+	match val { 
+	    Some(s) => {
+		Highlight{line: s, start:0, end: 1}
+	    }
+	    None => {
+		EMPTY_HIGHLIGHT
+	    }
+	}
+    }
 }
+
+/// Provides a useful package for reporting error messages.
+pub struct Highlight<'a> {
+    pub line : &'a str,
+    pub start: usize,
+    pub end: usize
+}
+
+/// A dummy highlight to use when (for whatever reason) the necessary
+/// source information for a given node is missing.
+pub const EMPTY_HIGHLIGHT : Highlight<'static> = Highlight{ line: "", start: 0, end: 0 };
 
 /**
  * Calculate the offset of one slice from another.  Specifically,
