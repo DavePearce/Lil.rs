@@ -15,6 +15,7 @@ use crate::typer::TypeChecker;
 use crate::source_map::SourceMap;
 use crate::type_map::TypeMap;
 use crate::error::SyntaxError;
+use crate::ast::AbstractSyntaxTree;
 
 fn main() {
     repl();
@@ -25,6 +26,8 @@ fn repl() {
     let mut stdout = io::stdout();
     // Buffer to hold input before parsing.
     let mut input = String::new();
+    //
+    let mut ast = AbstractSyntaxTree::new();
     //
     loop {
 	write!(stdout,"> ");	
@@ -37,21 +40,22 @@ fn repl() {
 	// Construct temporary type map
 	let mut type_map = TypeMap::new();
 	// Parse it!
-	let d = Parser::new(line, |i,s| source_map.map(i,s)).parse_decl();
+	let d = Parser::new(line, &mut ast, |i,s| source_map.map(i,s)).parse_decl();
 	//
 	if d.is_err() {
 	    print_error(line,d.err().unwrap());
 	} else {
 	    let ast = d.ok().unwrap();
-	    println!("Parsed: {}",&ast);
-	    // Now type check it!
-	    let typing = TypeChecker::new(|i,t| type_map.map(i,t)).check(&ast);
-	    //
-	    if typing.is_err() {
-		print_syntax_error(&typing.err().unwrap(), &source_map);
-	    } else {
-		println!("Type checking suceeded");
-	    }
+	    
+	    // println!("Parsed: {}",&ast);
+	    // // Now type check it!
+	    // let typing = TypeChecker::new(|i,t| type_map.map(i,t)).check(&ast);
+	    // //
+	    // if typing.is_err() {
+	    // 	print_syntax_error(&typing.err().unwrap(), &source_map);
+	    // } else {
+	    // 	println!("Type checking suceeded");
+	    // }
 	}	  
 	//
 	input.clear();

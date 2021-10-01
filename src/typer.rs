@@ -33,11 +33,11 @@ where F : FnMut(usize,Type) {
 
     // Declarations
     // -----------------------------------------------------------------
-    
+/*        
     pub fn check(&self, d : &Decl) -> Result<()> {
 	match d {
 	    Decl::TypeAlias(name,alias) => {
-		self.check_type_alias(name,alias)
+	    	self.check_type_alias(name,alias)
 	    }
 	    Decl::Method(name,ret,params,body) => {
 	    	self.check_method(name,ret,params,body)
@@ -45,7 +45,7 @@ where F : FnMut(usize,Type) {
 	    _ => Err(internal_failure(0,"unknown declaration"))
 	}
     }
-    
+
     pub fn check_type_alias(&self, name : &String, alias : &Type) -> Result<()> {
 	// Sanity check alias type
 	self.check_type(alias)?;
@@ -167,4 +167,5 @@ where F : FnMut(usize,Type) {
 	    Err(expected_subtype(0))
 	}
     }
+*/
 }

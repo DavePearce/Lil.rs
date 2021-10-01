@@ -37,6 +37,8 @@ pub struct Parser<'a, F>
 where F : FnMut(usize,&'a str) {
     /// Provides access to our token stream.
     lexer: Lexer<'a>,
+    /// Provides access to the ast
+    ast: &'a mut AbstractSyntaxTree,
     /// Provides mechanism for source maps
     mapper : F
 	
@@ -45,16 +47,20 @@ where F : FnMut(usize,&'a str) {
 impl<'a,F> Parser<'a,F>
 where F : FnMut(usize,&'a str) {
    
-    pub fn new(input: &'a str, mapper : F) -> Self {
-	Self { lexer: Lexer::new(input), mapper }
+    pub fn new(input: &'a str, ast: &'a mut AbstractSyntaxTree, mapper : F) -> Self {
+	Self { lexer: Lexer::new(input), ast, mapper }
     }
+
+    // =========================================================================
+    // Accessors / Mutators
+    // =========================================================================    
 
     // =========================================================================
     // Declarations
     // =========================================================================    
 
     /// Parse an arbitrary declaration
-    pub fn parse_decl(&mut self) -> Result<Decl> {
+    pub fn parse_decl(&mut self) -> Result<usize> {
 	let lookahead = self.lexer.peek();
 	// Attempt to parse declaration
 	match lookahead.kind {
@@ -68,7 +74,7 @@ where F : FnMut(usize,&'a str) {
     }
     
     /// Parse a type declaration of the from `type name is type;`.
-    pub fn parse_decl_type(&mut self) -> Result<Decl> {
+    pub fn parse_decl_type(&mut self) -> Result<usize> {
 	// "type"
 	let start = self.snap(TokenType::Type)?;
 	// Identifier
@@ -76,7 +82,7 @@ where F : FnMut(usize,&'a str) {
 	// "="
 	self.snap(TokenType::Equal)?;
 	// Type
-	let typ_e : Type = self.parse_type()?;
+	let typ_e = self.parse_type()?;
 	// Semi-colon
 	let end = self.snap(TokenType::SemiColon)?;
 	// Extract corresponding (sub)slice
@@ -84,12 +90,14 @@ where F : FnMut(usize,&'a str) {
 	// Apply source map
 	//let attr = (self.mapper)(slice);
 	//
-	Ok(Decl::TypeAlias(name,typ_e))
+	let idx = self.ast.push(Node::TypeAlias(name,typ_e));
+	// Done
+	Ok(idx)
     }
 
     /// Parse a method declaration of the form `Type name([Type
     /// Identifier]*) Stmt.Block`.
-    pub fn parse_decl_method(&mut self) -> Result<Decl> {
+    pub fn parse_decl_method(&mut self) -> Result<usize> {
 	// Type
 	let ret_type = self.parse_type()?;
 	// Identifier
@@ -101,7 +109,9 @@ where F : FnMut(usize,&'a str) {
 	// Apply source map
 	//let attr = (self.mapper)("test");
 	//
-	Ok(Decl::Method(name,ret_type,params,body))
+	let idx = self.ast.push(Node::Method(name,ret_type,params,body));
+	//
+	Ok(idx)
     }
 
     /// Parse a list of parameter declarations
@@ -134,97 +144,98 @@ where F : FnMut(usize,&'a str) {
     /// Parse a block of zero or more statements surrounded by curly
     /// braces.  For example, `{ int x = 1; x = x + 1; }`.
     pub fn parse_stmt_block(&mut self) -> Result<Stmt> {
-	let mut stmts : Vec<Stmt> = Vec::new();
-	// "{"
-	self.snap(TokenType::LeftCurly)?;
-	// Keep going until a right curly
-	while self.snap(TokenType::RightCurly).is_err() {
-	    stmts.push(self.parse_stmt()?);
-	}
-	// Temporary for now
-	Ok(Stmt::Block(stmts))
+    	// let mut stmts : Vec<Stmt> = Vec::new();
+    	// // "{"
+    	// self.snap(TokenType::LeftCurly)?;
+    	// // Keep going until a right curly
+    	// while self.snap(TokenType::RightCurly).is_err() {
+    	//     stmts.push(self.parse_stmt()?);
+    	// }
+    	// // Temporary for now
+    	// Ok(Stmt::Block(stmts))
+	Ok(Stmt::new(0))
     }    
     
-    /// Parse an arbitrary statement.
-    pub fn parse_stmt(&mut self) -> Result<Stmt> {
-	let lookahead = self.lexer.peek();
-	//
-	match lookahead.kind {
-	    _ => self.parse_unit_stmt()
-	}
-    }
+    // /// Parse an arbitrary statement.
+    // pub fn parse_stmt(&mut self) -> Result<Stmt> {
+    // 	let lookahead = self.lexer.peek();
+    // 	//
+    // 	match lookahead.kind {
+    // 	    _ => self.parse_unit_stmt()
+    // 	}
+    // }
 
-    /// Parse a unit statement.  This one which does not contain other
-    /// statements, and is terminated with a ";".
-    pub fn parse_unit_stmt(&mut self) -> Result<Stmt> {
-	let lookahead = self.lexer.peek();
-	//
-	let stmt = match lookahead.kind {
-	    TokenType::Assert => {
-		self.parse_stmt_assert()
-	    }
-	    _ => {
-		return Err(Error::new(lookahead,"unknown token encountered"));
-	    }
-	};
-	// ";"
-	self.snap(TokenType::SemiColon)?;
-	// Done
-	stmt
-    }
+    // /// Parse a unit statement.  This one which does not contain other
+    // /// statements, and is terminated with a ";".
+    // pub fn parse_unit_stmt(&mut self) -> Result<Stmt> {
+    // 	let lookahead = self.lexer.peek();
+    // 	//
+    // 	let stmt = match lookahead.kind {
+    // 	    TokenType::Assert => {
+    // 		self.parse_stmt_assert()
+    // 	    }
+    // 	    _ => {
+    // 		return Err(Error::new(lookahead,"unknown token encountered"));
+    // 	    }
+    // 	};
+    // 	// ";"
+    // 	self.snap(TokenType::SemiColon)?;
+    // 	// Done
+    // 	stmt
+    // }
 
-    pub fn parse_stmt_assert(&mut self) -> Result<Stmt> {
-	// "assert"
-	self.snap(TokenType::Assert)?;
-	// Expr
-	let expr = self.parse_expr()?;
-	//
-	Ok(Stmt::Assert(expr))
-    }        
+    // pub fn parse_stmt_assert(&mut self) -> Result<Stmt> {
+    // 	// "assert"
+    // 	self.snap(TokenType::Assert)?;
+    // 	// Expr
+    // 	let expr = self.parse_expr()?;
+    // 	//
+    // 	Ok(Stmt::Assert(expr))
+    // }        
 
-    // =========================================================================
-    // Expressions
-    // =========================================================================    
+    // // =========================================================================
+    // // Expressions
+    // // =========================================================================    
 
-    pub fn parse_expr(&mut self) -> Result<Expr> {
-	self.parse_expr_term()
-    }
+    // pub fn parse_expr(&mut self) -> Result<Expr> {
+    // 	self.parse_expr_term()
+    // }
 
-    pub fn parse_expr_term(&mut self) -> Result<Expr> {
-	let lookahead = self.lexer.peek();
-	//
-	match lookahead.kind {
-	    TokenType::False => {
-		self.lexer.next();
-		Ok(Expr::BoolLiteral(false))
-	    }
-	    TokenType::Integer => {
-		self.lexer.next();
-		Ok(Expr::IntLiteral(lookahead.as_int()))		
-	    }
-	    TokenType::LeftBrace => {
-		self.parse_expr_bracketed()
-	    }
-	    TokenType::True => {
-		self.lexer.next();		
-		Ok(Expr::BoolLiteral(true))
-	    }	    
-	    _ => {
-		Err(Error::new(lookahead,"unknown token encountered"))
-	    }
-	}
-    }
+    // pub fn parse_expr_term(&mut self) -> Result<Expr> {
+    // 	let lookahead = self.lexer.peek();
+    // 	//
+    // 	match lookahead.kind {
+    // 	    TokenType::False => {
+    // 		self.lexer.next();
+    // 		Ok(Expr::BoolLiteral(false))
+    // 	    }
+    // 	    TokenType::Integer => {
+    // 		self.lexer.next();
+    // 		Ok(Expr::IntLiteral(lookahead.as_int()))		
+    // 	    }
+    // 	    TokenType::LeftBrace => {
+    // 		self.parse_expr_bracketed()
+    // 	    }
+    // 	    TokenType::True => {
+    // 		self.lexer.next();		
+    // 		Ok(Expr::BoolLiteral(true))
+    // 	    }	    
+    // 	    _ => {
+    // 		Err(Error::new(lookahead,"unknown token encountered"))
+    // 	    }
+    // 	}
+    // }
 
-    pub fn parse_expr_bracketed(&mut self) -> Result<Expr> {
-	// "("
-	self.snap(TokenType::LeftBrace)?;
-	// Expr
-	let expr = self.parse_expr();
-	// ")"
-	self.snap(TokenType::RightBrace)?;
-	//
-	expr
-    }
+    // pub fn parse_expr_bracketed(&mut self) -> Result<Expr> {
+    // 	// "("
+    // 	self.snap(TokenType::LeftBrace)?;
+    // 	// Expr
+    // 	let expr = self.parse_expr();
+    // 	// ")"
+    // 	self.snap(TokenType::RightBrace)?;
+    // 	//
+    // 	expr
+    // }
     
     // =========================================================================
     // Types
@@ -242,77 +253,80 @@ where F : FnMut(usize,&'a str) {
 		// Something went wrong
 		Err(Error::new(lookahead,"unexpected end-of-file"))
 	    }
-	    TokenType::Ampersand => {
-		// Looks like a reference type
-		self.parse_type_ref()
-	    }
-	    TokenType::LeftCurly => {
-		// Looks like a record type
-		self.parse_type_record()
-	    }
+	    // TokenType::Ampersand => {
+	    // 	// Looks like a reference type
+	    // 	self.parse_type_ref()
+	    // }
+	    // TokenType::LeftCurly => {
+	    // 	// Looks like a record type
+	    // 	self.parse_type_record()
+	    // }
+	    // _ => {
+	    // 	// Could be an array type
+	    // 	self.parse_type_array()	    
+	    // }
 	    _ => {
-		// Could be an array type
-		self.parse_type_array()	    
-	    }
+		self.parse_type_base()	    
+	    }	    
 	}
     }
 
     /// Parse a reference type, such as `&i32`, `&(i32[])`, `&&u16`,
     /// etc.
-    pub fn parse_type_ref(&mut self) -> Result<Type> {
-	let mut n = 1;
-	// "&"
-	self.snap(TokenType::Ampersand)?;
-	// Check for nested references
-	while self.snap(TokenType::Ampersand).is_ok() {
-	    n = n + 1;
-	}	
-	// Type	
-	let mut t = self.parse_type_bracketed()?;	
-	// Unwind references
-	for i in 0..n {
-	    t = Ref(t);
-	}
-	// Done
-	Ok(t)
-    }
+    // pub fn parse_type_ref(&mut self) -> Result<usize> {
+    // 	let mut n = 1;
+    // 	// "&"
+    // 	self.snap(TokenType::Ampersand)?;
+    // 	// Check for nested references
+    // 	while self.snap(TokenType::Ampersand).is_ok() {
+    // 	    n = n + 1;
+    // 	}	
+    // 	// Type	
+    // 	let mut t = self.parse_type_bracketed()?;	
+    // 	// Unwind references
+    // 	for i in 0..n {
+    // 	    t = Ref(t);
+    // 	}
+    // 	// Done
+    // 	Ok(t)
+    // }
 
     /// Parse a record type, such as `{ i32 f }`, `{ bool f, u64 f }`,
     /// `{ &bool f, u64[] f }`, etc.
-    pub fn parse_type_record(&mut self) -> Result<Type> {
-	let mut fields : Vec<(Type,String)> = vec![];
-	// "{"
-	self.snap(TokenType::LeftCurly)?;
-	// Keep going until a right brace
-	while self.snap(TokenType::RightCurly).is_err() {
-	    // Check if first time or not
-	    if !fields.is_empty() {
-		// Not first time, so match comma
-		self.snap(TokenType::Comma)?;
-	    }
-	    // Type
-	    let f_type = self.parse_type()?;
-	    // Identifier
-	    let f_name = self.parse_identifier()?;
-	    // 
-	    fields.push((f_type,f_name));
-	}
-	// Done
-	Ok(Type::Record(fields))
-    }
+    // pub fn parse_type_record(&mut self) -> Result<usize> {
+    // 	let mut fields : Vec<(Type,String)> = vec![];
+    // 	// "{"
+    // 	self.snap(TokenType::LeftCurly)?;
+    // 	// Keep going until a right brace
+    // 	while self.snap(TokenType::RightCurly).is_err() {
+    // 	    // Check if first time or not
+    // 	    if !fields.is_empty() {
+    // 		// Not first time, so match comma
+    // 		self.snap(TokenType::Comma)?;
+    // 	    }
+    // 	    // Type
+    // 	    let f_type = self.parse_type()?;
+    // 	    // Identifier
+    // 	    let f_name = self.parse_identifier()?;
+    // 	    // 
+    // 	    fields.push((f_type,f_name));
+    // 	}
+    // 	// Done
+    // 	Ok(Type::Record(fields))
+    // }
 
     /// Parse an array type, such as `i32[]`, `bool[][]`, etc.
-    pub fn parse_type_array(&mut self) -> Result<Type> {
-	// Type
-	let mut t = self.parse_type_bracketed()?;
-	// ([])*
-	while self.snap(TokenType::LeftSquare).is_ok() {
-	    self.snap(TokenType::RightSquare)?;
-	    t = Type::Array(Box::new(t));
-	}
-	//
-	Ok(t)
-    }
+    // pub fn parse_type_array(&mut self) -> Result<usize> {
+    // 	// Type
+    // 	let mut t = self.parse_type_bracketed()?;
+    // 	// ([])*
+    // 	while self.snap(TokenType::LeftSquare).is_ok() {
+    // 	    self.snap(TokenType::RightSquare)?;
+    // 	    t = Type::Array(Box::new(t));
+    // 	}
+    // 	//
+    // 	Ok(t)
+    // }
 
     /// Parse a type which may (or may not) be bracketed.  For
     /// example, in `(&int)[]` the type `&int` is bracketed.
@@ -333,44 +347,44 @@ where F : FnMut(usize,&'a str) {
     pub fn parse_type_base(&mut self) -> Result<Type> {
 	let lookahead = self.lexer.peek();
 	// Look at what we've got!
-	let t = match lookahead.kind {
+	let idx : usize = match lookahead.kind {
 	    TokenType::Null => {
-		Type::Null
+		self.ast.push(Node::TypeNull)
 	    }
 	    //
-	    TokenType::Bool => {
-		Type::Bool
-	    }
-	    //
-	    TokenType::I8 => {
-		Type::Int8
-	    }
-	    TokenType::I16 => {
-		Type::Int16
-	    }
-	    TokenType::I32 => {
-		Type::Int32
-	    }
-	    TokenType::I64 => {
-		Type::Int64
-	    }
-	    //
-	    TokenType::U8 => {
-		Type::Uint8
-	    }
-	    TokenType::U16 => {
-		Type::Uint16
-	    }
-	    TokenType::U32 => {
-		Type::Uint32
-	    }
-	    TokenType::U64 => {
-		Type::Uint64
-	    }
-	    //
-	    TokenType::Void => {
-		Type::Void
-	    }
+	    // TokenType::Bool => {
+	    // 	Type::Bool
+	    // }
+	    // //
+	    // TokenType::I8 => {
+	    // 	Type::Int8
+	    // }
+	    // TokenType::I16 => {
+	    // 	Type::Int16
+	    // }
+	    // TokenType::I32 => {
+	    // 	Type::Int32
+	    // }
+	    // TokenType::I64 => {
+	    // 	Type::Int64
+	    // }
+	    // //
+	    // TokenType::U8 => {
+	    // 	Type::Uint8
+	    // }
+	    // TokenType::U16 => {
+	    // 	Type::Uint16
+	    // }
+	    // TokenType::U32 => {
+	    // 	Type::Uint32
+	    // }
+	    // TokenType::U64 => {
+	    // 	Type::Uint64
+	    // }
+	    // //
+	    // TokenType::Void => {
+	    // 	Type::Void
+	    // }
 	    _ => {
 		return Err(Error::new(lookahead,"unknown token encountered"));
 	    }
@@ -378,7 +392,7 @@ where F : FnMut(usize,&'a str) {
 	// Move over it
 	self.lexer.next();
 	//
-	Ok(t)
+	Ok(Type::new(idx))
     }
     
     // =========================================================================
