@@ -6,6 +6,9 @@ use std::convert::From;
 pub struct Stmt { pub index: usize }
 
 #[derive(Clone,Debug,PartialEq)]
+pub struct Expr { pub index: usize }
+
+#[derive(Clone,Debug,PartialEq)]
 pub struct Type { pub index: usize }
 
 /// Represents a parameter declaration in the source of a given method.
@@ -21,9 +24,12 @@ pub enum Node {
     DeclType(String,Type),    
     DeclMethod(String,Type,Vec<Parameter>,Stmt),
     // Statements
+    StmtAssert(Expr),
     StmtBlock(Vec<Stmt>),
     StmtSkip,    
     // Expressions
+    ExprBool(bool),
+    ExprInt(i32),    
     // Types
     TypeArray(Type),
     TypeBool,
@@ -79,6 +85,9 @@ impl fmt::Display for Ref<'_> {
 		s.push(')');		
 		write!(f,"{} {}{} {}",r.to_ref(self.parent),n,s,body.to_ref(self.parent))		       
 	    }
+	    Node::StmtAssert(expr) => {
+		write!(f,"assert {};",expr.to_ref(self.parent))		
+	    }
 	    Node::StmtBlock(stmts) => {
 		let mut s = String::new();
 		s.push('{');    
@@ -90,6 +99,12 @@ impl fmt::Display for Ref<'_> {
 	    }
 	    Node::StmtSkip => {
 		write!(f,"skip;")
+	    }
+	    Node::ExprBool(l) => {
+		write!(f,"{}",l)
+	    }
+	    Node::ExprInt(i) => {
+		write!(f,"{}",i)
 	    }
 	    Node::TypeArray(t) => {
 		write!(f,"{}[]",t.to_ref(self.parent))
@@ -128,7 +143,7 @@ impl fmt::Display for Ref<'_> {
 		write!(f,"void")
 	    }	    
 	    _ => {
-		write!(f,"(????)")
+		write!(f,"???")
 	    }
 	}
     }
@@ -147,6 +162,12 @@ impl From<Ref<'_>> for Type {
 }
 
 impl ToRef for Stmt {
+    fn to_ref<'a>(&self, parent: &'a AbstractSyntaxTree) -> Ref<'a> {
+	Ref::new(parent,self.index)
+    }
+}
+
+impl ToRef for Expr {
     fn to_ref<'a>(&self, parent: &'a AbstractSyntaxTree) -> Ref<'a> {
 	Ref::new(parent,self.index)
     }
@@ -241,6 +262,12 @@ impl fmt::Display for Parameter {
 impl fmt::Display for Stmt {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {	
 	write!(f,"Stmt({})",self.index)
+    }
+}
+
+impl fmt::Display for Expr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {	
+	write!(f,"Expr({})",self.index)
     }
 }
 

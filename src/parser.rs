@@ -173,9 +173,9 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     	let lookahead = self.lexer.peek();
     	//
     	let stmt = match lookahead.kind {
-    	    // TokenType::Assert => {
-    	    // 	self.parse_stmt_assert()
-    	    // }
+    	    TokenType::Assert => {
+    	    	self.parse_stmt_assert()
+    	    }
 	    TokenType::Skip => {
 		self.parse_stmt_skip()
 	    }
@@ -189,14 +189,16 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     	stmt
     }
 
-    // pub fn parse_stmt_assert(&mut self) -> Result<Stmt> {
-    // 	// "assert"
-    // 	self.snap(TokenType::Assert)?;
-    // 	// Expr
-    // 	let expr = self.parse_expr()?;
-    // 	//
-    // 	Ok(Stmt::Assert(expr))
-    // }
+    pub fn parse_stmt_assert(&mut self) -> Result<Stmt> {
+    	// "assert"
+    	self.snap(TokenType::Assert)?;
+    	// Expr
+    	let expr = self.parse_expr()?;
+    	// Allocate node
+	let index = self.ast.push(Node::StmtAssert(expr));
+	// Done
+    	Ok(Stmt{index})	
+    }
 
     pub fn parse_stmt_skip(&mut self) -> Result<Stmt> {
     	// "skip"
@@ -205,6 +207,52 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 	let index = self.ast.push(Node::StmtSkip);
 	// Done
     	Ok(Stmt{index})
+    }
+
+// // =========================================================================
+    // // Expressions
+    // // =========================================================================    
+
+    pub fn parse_expr(&mut self) -> Result<Expr> {
+    	self.parse_expr_term()
+    }
+
+    pub fn parse_expr_term(&mut self) -> Result<Expr> {
+    	let lookahead = self.lexer.peek();
+    	//
+    	let index : usize = match lookahead.kind {
+    	    TokenType::False => {
+    		self.lexer.next();
+    		self.ast.push(Node::ExprBool(false))
+    	    }
+    	    TokenType::Integer => {
+    	    	self.lexer.next();
+    		self.ast.push(Node::ExprInt(lookahead.as_int()))	
+    	    }
+    	    TokenType::LeftBrace => {
+    	    	return self.parse_expr_bracketed()
+    	    }
+    	    TokenType::True => {
+    		self.lexer.next();
+    		self.ast.push(Node::ExprBool(true))
+    	    }
+    	    _ => {
+    		return Err(Error::new(lookahead,"unknown token encountered"))
+    	    }
+    	};
+	//
+	Ok(Expr{index})
+    }
+
+    pub fn parse_expr_bracketed(&mut self) -> Result<Expr> {
+    	// "("
+    	self.snap(TokenType::LeftBrace)?;
+    	// Expr
+    	let expr = self.parse_expr();
+    	// ")"
+    	self.snap(TokenType::RightBrace)?;
+    	//
+    	expr
     }
     
     // =========================================================================
