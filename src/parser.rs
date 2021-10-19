@@ -98,47 +98,115 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 
     /// Parse a method declaration of the form `Type name([Type
     /// Identifier]*) Stmt.Block`.
-    pub fn parse_decl_method(&mut self) -> Result<Ref<'a>> {
-	// // Type
-	// let ret_type = self.parse_type()?;
-	// // Identifier
-	// let name = self.parse_identifier()?;
-	// // "(" [Type Identifier]+ ")"
-	// let params = self.parse_decl_parameters()?;
-	// // "{" [Stmt]* "}"
-	// let body = self.parse_stmt_block()?;
+    pub fn parse_decl_method(&'b mut self) -> Result<Ref<'b>> {
+	// Type
+	let ret_type = self.parse_type()?;
+	// Identifier
+	let name = self.parse_identifier()?;
+	// "(" [Type Identifier]+ ")"
+	let params = self.parse_decl_parameters()?;
+	// "{" [Stmt]* "}"
+	let body = self.parse_stmt_block()?;
 	// // Apply source map
 	// //let attr = (self.mapper)("test");
+	//
+	let idx = self.ast.push(Node::DeclMethod(name,ret_type,params,body));
 	// //
-	// let idx = self.ast.push(Node::Method(name,ret_type,params,body));
-	// //
-	// Ok(idx)
-	todo!("GOT HERE");
+	Ok(Ref::new(&self.ast,idx))
     }
 
     /// Parse a list of parameter declarations
-    // pub fn parse_decl_parameters(&mut self) -> Result<Vec<Parameter>> {
-    // 	let mut params : Vec<Parameter> = vec![];
-    // 	// "("
-    // 	self.snap(TokenType::LeftBrace)?;
-    // 	// Keep going until a right brace
-    // 	while self.snap(TokenType::RightBrace).is_err() {
-    // 	    // Check if first time or not
-    // 	    if !params.is_empty() {
-    // 		// Not first time, so match comma
-    // 		self.snap(TokenType::Comma)?;
-    // 	    }
-    // 	    // Type
-    // 	    let f_type = self.parse_type()?;
-    // 	    // Identifier
-    // 	    let f_name = self.parse_identifier()?;
-    // 	    // 
-    // 	    params.push(Parameter{declared:f_type,name:f_name});
-    // 	}
-    // 	// Done
-    // 	Ok(params)
+    pub fn parse_decl_parameters(&mut self) -> Result<Vec<Parameter>> {
+    	let mut params : Vec<Parameter> = vec![];
+    	// "("
+    	self.snap(TokenType::LeftBrace)?;
+    	// Keep going until a right brace
+    	while self.snap(TokenType::RightBrace).is_err() {
+    	    // Check if first time or not
+    	    if !params.is_empty() {
+    		// Not first time, so match comma
+    		self.snap(TokenType::Comma)?;
+    	    }
+    	    // Type
+    	    let f_type = self.parse_type()?;
+    	    // Identifier
+    	    let f_name = self.parse_identifier()?;
+    	    // 
+    	    params.push(Parameter{declared:f_type,name:f_name});
+    	}
+    	// Done
+    	Ok(params)
+    }
+
+  // =========================================================================
+    // Statements
+    // =========================================================================    
+
+    /// Parse a block of zero or more statements surrounded by curly
+    /// braces.  For example, `{ int x = 1; x = x + 1; }`.
+    pub fn parse_stmt_block(&mut self) -> Result<Stmt> {
+    	let mut stmts : Vec<Stmt> = Vec::new();
+    	// "{"
+    	self.snap(TokenType::LeftCurly)?;
+    	// Keep going until a right curly
+    	while self.snap(TokenType::RightCurly).is_err() {
+    	    stmts.push(self.parse_stmt()?);
+    	}
+	// Allocate statement block
+	let index = self.ast.push(Node::StmtBlock(stmts));
+    	// Temporary for now
+    	Ok(Stmt{index})
+    }    
+    
+    /// Parse an arbitrary statement.
+    pub fn parse_stmt(&mut self) -> Result<Stmt> {
+    	let lookahead = self.lexer.peek();
+    	//
+    	match lookahead.kind {
+    	    _ => self.parse_unit_stmt()
+    	}
+    }
+
+    /// Parse a unit statement.  This one which does not contain other
+    /// statements, and is terminated with a ";".
+    pub fn parse_unit_stmt(&mut self) -> Result<Stmt> {
+    	let lookahead = self.lexer.peek();
+    	//
+    	let stmt = match lookahead.kind {
+    	    // TokenType::Assert => {
+    	    // 	self.parse_stmt_assert()
+    	    // }
+	    TokenType::Skip => {
+		self.parse_stmt_skip()
+	    }
+    	    _ => {
+    		return Err(Error::new(lookahead,"unknown token encountered"));
+    	    }
+    	};
+    	// ";"
+    	self.snap(TokenType::SemiColon)?;
+    	// Done
+    	stmt
+    }
+
+    // pub fn parse_stmt_assert(&mut self) -> Result<Stmt> {
+    // 	// "assert"
+    // 	self.snap(TokenType::Assert)?;
+    // 	// Expr
+    // 	let expr = self.parse_expr()?;
+    // 	//
+    // 	Ok(Stmt::Assert(expr))
     // }
 
+    pub fn parse_stmt_skip(&mut self) -> Result<Stmt> {
+    	// "skip"
+    	self.snap(TokenType::Skip)?;
+    	// Allocate node
+	let index = self.ast.push(Node::StmtSkip);
+	// Done
+    	Ok(Stmt{index})
+    }
+    
     // =========================================================================
     // Types
     // =========================================================================    

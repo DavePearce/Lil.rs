@@ -21,6 +21,8 @@ pub enum Node {
     DeclType(String,Type),    
     DeclMethod(String,Type,Vec<Parameter>,Stmt),
     // Statements
+    StmtBlock(Vec<Stmt>),
+    StmtSkip,    
     // Expressions
     // Types
     TypeArray(Type),
@@ -63,9 +65,31 @@ impl fmt::Display for Ref<'_> {
 	    Node::DeclType(s,t) => {
 		write!(f,"type {}={}",s,t.to_ref(self.parent))
 	    }
-	    Node::DeclMethod(n,r,ps,b) => {
-		let pstr = to_string(ps);
-		write!(f,"DeclMethod({},{},{},{})",n,r,pstr,b)		       
+	    Node::DeclMethod(n,r,ps,body) => {
+		let mut s = String::new();
+		let mut b = true;		
+		s.push('(');    
+		for p in ps {
+		    if !b { s.push(','); }
+		    b = false;		    
+		    s.push_str(&p.declared.to_ref(self.parent).to_string());
+		    s.push_str(" ");		    
+		    s.push_str(&p.name);
+		}
+		s.push(')');		
+		write!(f,"{} {}{} {}",r.to_ref(self.parent),n,s,body.to_ref(self.parent))		       
+	    }
+	    Node::StmtBlock(stmts) => {
+		let mut s = String::new();
+		s.push('{');    
+		for stmt in stmts {
+		    s.push_str(&stmt.to_ref(self.parent).to_string());
+		}
+		s.push('}');
+		write!(f,"{}",s)
+	    }
+	    Node::StmtSkip => {
+		write!(f,"skip;")
 	    }
 	    Node::TypeArray(t) => {
 		write!(f,"{}[]",t.to_ref(self.parent))
@@ -100,6 +124,9 @@ impl fmt::Display for Ref<'_> {
 	    Node::TypeReference(t) => {
 		write!(f,"&{}",t.to_ref(self.parent))
 	    }
+	    Node::TypeVoid => {
+		write!(f,"void")
+	    }	    
 	    _ => {
 		write!(f,"(????)")
 	    }
@@ -116,6 +143,12 @@ impl From<Ref<'_>> for Stmt {
 impl From<Ref<'_>> for Type {
     fn from(r: Ref<'_>) -> Type {
 	Type{index:r.index}
+    }
+}
+
+impl ToRef for Stmt {
+    fn to_ref<'a>(&self, parent: &'a AbstractSyntaxTree) -> Ref<'a> {
+	Ref::new(parent,self.index)
     }
 }
 

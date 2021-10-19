@@ -57,6 +57,7 @@ pub enum TokenType {
     Shreak,    
     ShreakEquals,
     SemiColon,
+    Skip,
     Switch,
     Star,
     True,
@@ -272,6 +273,9 @@ impl<'a> Lexer<'a> {
             }
 	    "return" => {
                 TokenType::Return
+            }
+	    "skip" => {
+                TokenType::Skip
             }
 	    "switch" => {
                 TokenType::Switch
