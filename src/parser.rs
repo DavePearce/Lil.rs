@@ -458,215 +458,216 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 // Tests (Type DeclTypees)
 // ======================================================
 
+/// A dummy mapper which does nothing.
+fn dummy<'a>(_: usize, _: &'a str) { }
+
 #[test]
-fn test_type_01() { 
-    let d = Parser::new("type nat = i32").parse().unwrap();
-    assert_eq!(d,Decl::Error);
+fn test_type_01() {
+    check_error("type nat = i32");
 }
 
 #[test]
 fn test_type_02() { 
-    let d = Parser::new("type nat i8;").parse().unwrap();
-    assert_eq!(d,Decl::Error);
+    check_error("type nat i8;");
 }
 
 #[test]
 fn test_type_03() { 
-    let d = Parser::new("type t = bool;").parse().unwrap();
-    assert_eq!(d,Decl::DeclType("t".to_string(), Type::Bool ));
+    let ast = check_parse("type t = bool;");
+    assert!(matches!(ast.get(0),Node::TypeBool));
 }
 
-#[test]
-fn test_type_04() { 
-    let d = Parser::new("type nat = i8;").parse().unwrap();
-    assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Int8 ));
-}
+// #[test]
+// fn test_type_04() { 
+//     let d = Parser::new("type nat = i8;").parse().unwrap();
+//     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Int8 ));
+// }
 
-#[test]
-fn test_type_05() { 
-    let d = Parser::new("type nat = i16;").parse().unwrap();
-    assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Int16 ));
-}
+// #[test]
+// fn test_type_05() { 
+//     let d = Parser::new("type nat = i16;").parse().unwrap();
+//     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Int16 ));
+// }
 
-#[test]
-fn test_type_06() { 
-    let d = Parser::new("type nat = i32;").parse().unwrap();
-    assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Int32 ));
-}
+// #[test]
+// fn test_type_06() { 
+//     let d = Parser::new("type nat = i32;").parse().unwrap();
+//     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Int32 ));
+// }
 
-#[test]
-fn test_type_07() { 
-    let d = Parser::new("type nat = i64;").parse().unwrap();
-    assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Int64 ));
-}
+// #[test]
+// fn test_type_07() { 
+//     let d = Parser::new("type nat = i64;").parse().unwrap();
+//     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Int64 ));
+// }
 
-#[test]
-fn test_type_08() { 
-    let d = Parser::new("type nat = u8;").parse().unwrap();
-    assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Uint8 ));
-}
+// #[test]
+// fn test_type_08() { 
+//     let d = Parser::new("type nat = u8;").parse().unwrap();
+//     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Uint8 ));
+// }
 
-#[test]
-fn test_type_09() { 
-    let d = Parser::new("type nat = u16;").parse().unwrap();
-    assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Uint16 ));
-}
+// #[test]
+// fn test_type_09() { 
+//     let d = Parser::new("type nat = u16;").parse().unwrap();
+//     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Uint16 ));
+// }
 
-#[test]
-fn test_type_10() { 
-    let d = Parser::new("type nat = u32;").parse().unwrap();
-    assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Uint32 ));
-}
+// #[test]
+// fn test_type_10() { 
+//     let d = Parser::new("type nat = u32;").parse().unwrap();
+//     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Uint32 ));
+// }
 
-#[test]
-fn test_type_11() { 
-    let d = Parser::new("type nat = u64;").parse().unwrap();
-    assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Uint64 ));
-}
+// #[test]
+// fn test_type_11() { 
+//     let d = Parser::new("type nat = u64;").parse().unwrap();
+//     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Uint64 ));
+// }
 
-#[test]
-fn test_type_12() { 
-    let d = Parser::new("type intarr = i32[];").parse().unwrap();
-    assert_eq!(d,Decl::DeclType("intarr".to_string(), Array(Type::Int32)));
-}
+// #[test]
+// fn test_type_12() { 
+//     let d = Parser::new("type intarr = i32[];").parse().unwrap();
+//     assert_eq!(d,Decl::DeclType("intarr".to_string(), Array(Type::Int32)));
+// }
 
-#[test]
-fn test_type_13() { 
-    let d = Parser::new("type intarrarr = i32[][];").parse().unwrap();
-    assert_eq!(d,Decl::DeclType("intarrarr".to_string(), Array(Array(Type::Int32))));
-}
+// #[test]
+// fn test_type_13() { 
+//     let d = Parser::new("type intarrarr = i32[][];").parse().unwrap();
+//     assert_eq!(d,Decl::DeclType("intarrarr".to_string(), Array(Array(Type::Int32))));
+// }
 
-#[test]
-fn test_type_14() { 
-    let d = Parser::new("type r_int = &i16;").parse().unwrap();
-    assert_eq!(d,Decl::DeclType("r_int".to_string(), Ref(Type::Int16)));
-}
+// #[test]
+// fn test_type_14() { 
+//     let d = Parser::new("type r_int = &i16;").parse().unwrap();
+//     assert_eq!(d,Decl::DeclType("r_int".to_string(), Ref(Type::Int16)));
+// }
 
-#[test]
-fn test_type_15() { 
-    let d = Parser::new("type r_int = &&i16;").parse().unwrap();
-    assert_eq!(d,Decl::DeclType("r_int".to_string(), Ref(Ref(Type::Int16))));
-}
+// #[test]
+// fn test_type_15() { 
+//     let d = Parser::new("type r_int = &&i16;").parse().unwrap();
+//     assert_eq!(d,Decl::DeclType("r_int".to_string(), Ref(Ref(Type::Int16))));
+// }
 
-#[test]
-fn test_type_16() { 
-    let d = Parser::new("type rec = {i64 f};").parse().unwrap();
-    assert_eq!(d,Decl::DeclType("rec".to_string(), Record(&[(Type::Int64,"f".to_string())])));
-}
+// #[test]
+// fn test_type_16() { 
+//     let d = Parser::new("type rec = {i64 f};").parse().unwrap();
+//     assert_eq!(d,Decl::DeclType("rec".to_string(), Record(&[(Type::Int64,"f".to_string())])));
+// }
 
-#[test]
-fn test_type_17() { 
-    let d = Parser::new("type rec = {i64 f, u32 g};").parse().unwrap();
-    let fields = [(Type::Int64,"f".to_string()), (Type::Uint32,"g".to_string())];
-    assert_eq!(d,Decl::DeclType("rec".to_string(), Record(&fields)));
-}
+// #[test]
+// fn test_type_17() { 
+//     let d = Parser::new("type rec = {i64 f, u32 g};").parse().unwrap();
+//     let fields = [(Type::Int64,"f".to_string()), (Type::Uint32,"g".to_string())];
+//     assert_eq!(d,Decl::DeclType("rec".to_string(), Record(&fields)));
+// }
 
-#[test]
-fn test_type_18() { 
-    let d = Parser::new("type piarr = (&u32)[];").parse().unwrap();
-    assert_eq!(d,Decl::DeclType("piarr".to_string(), Array(Ref(Type::Uint32))));
-}
+// #[test]
+// fn test_type_18() { 
+//     let d = Parser::new("type piarr = (&u32)[];").parse().unwrap();
+//     assert_eq!(d,Decl::DeclType("piarr".to_string(), Array(Ref(Type::Uint32))));
+// }
 
-#[test]
-fn test_type_19() { 
-    let d = Parser::new("type rec = {&i8 f, u16[] g};").parse().unwrap();
-    let fields = [(Ref(Type::Int8),"f".to_string()), (Array(Type::Uint16),"g".to_string())];
-    assert_eq!(d,Decl::DeclType("rec".to_string(), Record(&fields)));
-}
+// #[test]
+// fn test_type_19() { 
+//     let d = Parser::new("type rec = {&i8 f, u16[] g};").parse().unwrap();
+//     let fields = [(Ref(Type::Int8),"f".to_string()), (Array(Type::Uint16),"g".to_string())];
+//     assert_eq!(d,Decl::DeclType("rec".to_string(), Record(&fields)));
+// }
 
 // ======================================================
 // Tests (DeclMethods)
 // ======================================================
 
-#[test]
-fn test_method_01() { 
-    let d = Parser::new("voi").parse().unwrap();
-    assert_eq!(d,Decl::Error);
-}
+// #[test]
+// fn test_method_01() { 
+//     let d = Parser::new("voi").parse().unwrap();
+//     assert_eq!(d,Decl::Error);
+// }
 
-#[test]
-fn test_method_02() { 
-    let d = Parser::new("void").parse().unwrap();
-    assert_eq!(d,Decl::Error);
-}
+// #[test]
+// fn test_method_02() { 
+//     let d = Parser::new("void").parse().unwrap();
+//     assert_eq!(d,Decl::Error);
+// }
 
-#[test]
-fn test_method_03() { 
-    let d = Parser::new("void f").parse().unwrap();
-    assert_eq!(d,Decl::Error);
-}
+// #[test]
+// fn test_method_03() { 
+//     let d = Parser::new("void f").parse().unwrap();
+//     assert_eq!(d,Decl::Error);
+// }
 
-#[test]
-fn test_method_04() { 
-    let d = Parser::new("void f(").parse().unwrap();
-    assert_eq!(d,Decl::Error);
-}
+// #[test]
+// fn test_method_04() { 
+//     let d = Parser::new("void f(").parse().unwrap();
+//     assert_eq!(d,Decl::Error);
+// }
 
-#[test]
-fn test_method_05() { 
-    let d = Parser::new("void f() {").parse().unwrap();
-    assert_eq!(d,Decl::Error);
-}
+// #[test]
+// fn test_method_05() { 
+//     let d = Parser::new("void f() {").parse().unwrap();
+//     assert_eq!(d,Decl::Error);
+// }
 
-#[test]
-fn test_method_06() { 
-    let d = Parser::new("void f() {}").parse().unwrap();
-    //
-    match d {
-	Decl::DeclMethod(n,r,ps,b) => {
-	    assert_eq!(n,"f".to_string());
-	    assert_eq!(r,Type::Void);
-	    assert!(ps.is_empty());
-	    assert_eq!(b,Stmt::Block(Vec::new()));
-	}
-	_ => {
-	    panic!("Invalid match");
-	}
-    }
-}
+// #[test]
+// fn test_method_06() { 
+//     let d = Parser::new("void f() {}").parse().unwrap();
+//     //
+//     match d {
+// 	Decl::DeclMethod(n,r,ps,b) => {
+// 	    assert_eq!(n,"f".to_string());
+// 	    assert_eq!(r,Type::Void);
+// 	    assert!(ps.is_empty());
+// 	    assert_eq!(b,Stmt::Block(Vec::new()));
+// 	}
+// 	_ => {
+// 	    panic!("Invalid match");
+// 	}
+//     }
+// }
 
-#[test]
-fn test_method_07() { 
-    let d = Parser::new("bool f(i32 x) {}").parse().unwrap();
-    //
-    match d {
-	Decl::DeclMethod(n,r,ps,b) => {
-	    assert_eq!(n,"f".to_string());
-	    assert_eq!(r,Type::Bool);
-	    assert!(ps.len() == 1);
-	    assert!(ps[0] == (Type::Int32,"x".to_string()));
-	    assert_eq!(b,Stmt::Block(Vec::new()));
-	}
-	_ => {
-	    panic!("Invalid match");
-	}
-    }
-}
+// #[test]
+// fn test_method_07() { 
+//     let d = Parser::new("bool f(i32 x) {}").parse().unwrap();
+//     //
+//     match d {
+// 	Decl::DeclMethod(n,r,ps,b) => {
+// 	    assert_eq!(n,"f".to_string());
+// 	    assert_eq!(r,Type::Bool);
+// 	    assert!(ps.len() == 1);
+// 	    assert!(ps[0] == (Type::Int32,"x".to_string()));
+// 	    assert_eq!(b,Stmt::Block(Vec::new()));
+// 	}
+// 	_ => {
+// 	    panic!("Invalid match");
+// 	}
+//     }
+// }
 
-#[test]
-fn test_method_08() { 
-    let d = Parser::new("bool f(i32 i, bool b) {}").parse().unwrap();
-    //
-    match d {
-	Decl::DeclMethod(n,r,ps,b) => {
-	    assert_eq!(n,"f".to_string());
-	    assert_eq!(r,Type::Bool);
-	    assert!(ps.len() == 2);
-	    assert!(ps[0] == (Type::Int32,"i".to_string()));
-	    assert!(ps[1] == (Type::Bool,"b".to_string()));
-	    assert_eq!(b,Stmt::Block(Vec::new()));
-	}
-	_ => {
-	    panic!("Invalid match");
-	}
-    }
-}
+// #[test]
+// fn test_method_08() { 
+//     let d = Parser::new("bool f(i32 i, bool b) {}").parse().unwrap();
+//     //
+//     match d {
+// 	Decl::DeclMethod(n,r,ps,b) => {
+// 	    assert_eq!(n,"f".to_string());
+// 	    assert_eq!(r,Type::Bool);
+// 	    assert!(ps.len() == 2);
+// 	    assert!(ps[0] == (Type::Int32,"i".to_string()));
+// 	    assert!(ps[1] == (Type::Bool,"b".to_string()));
+// 	    assert_eq!(b,Stmt::Block(Vec::new()));
+// 	}
+// 	_ => {
+// 	    panic!("Invalid match");
+// 	}
+//     }
+// }
 
-#[test]
-fn test_method_09() { 
-    let d = Parser::new("void f() { assert true; }").parse().unwrap();
-    assert!(matches!(d, Decl::DeclMethod { .. }));
-}
+// #[test]
+// fn test_method_09() { 
+//     let d = Parser::new("void f() { assert true; }").parse().unwrap();
+//     assert!(matches!(d, Decl::DeclMethod { .. }));
+// }
 
 // ======================================================
 // Tests (Statements)
@@ -701,3 +702,20 @@ fn test_method_09() {
 //     let s = Parser::new("assert false;").parse_stmt();
 //     assert!(s.is_ok());
 // }
+
+#[cfg(test)]
+fn check_parse(input: &str) -> Box<AbstractSyntaxTree> {
+    let mut ast = AbstractSyntaxTree::new();
+    let mut p = Parser::new(input,&mut ast, dummy);
+    let d = p.parse_decl();
+    assert!(!d.is_err());
+    Box::new(ast)
+}
+
+#[cfg(test)]
+fn check_error(input: &str) {
+    let mut ast = AbstractSyntaxTree::new();
+    let mut p = Parser::new(input,&mut ast, dummy);
+    let d = p.parse_decl();
+    assert!(d.is_err());
+}
