@@ -61,7 +61,7 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     // =========================================================================    
 
     /// Parse an arbitrary declaration
-    pub fn parse_decl(&'b mut self) -> Result<Ref<'b>> {
+    pub fn parse_decl(&'b mut self) -> Result<Decl> {
 	let lookahead = self.lexer.peek();
 	// Attempt to parse declaration
 	match lookahead.kind {
@@ -75,7 +75,7 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     }
     
     /// Parse a type declaration of the from `type name is type;`.
-    pub fn parse_decl_type(&'b mut self) -> Result<Ref<'b>> {
+    pub fn parse_decl_type(&'b mut self) -> Result<Decl> {
 	// "type"
 	let start = self.snap(TokenType::Type)?;
 	// Identifier
@@ -83,7 +83,7 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 	// "="
 	self.snap(TokenType::Equal)?;
 	// Type
-	let typ_e = Type::from(self.parse_type()?);
+	let typ_e = self.parse_type()?;
 	// Semi-colon
 	let end = self.snap(TokenType::SemiColon)?;
 	// Extract corresponding (sub)slice
@@ -91,169 +91,170 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 	// Apply source map
 	//let attr = (self.mapper)(slice);
 	//
-	let idx = self.ast.push(Node::DeclType(name,typ_e));
+	let idx = self.ast.push(Node::DeclType(name),&[typ_e.index]);
 	// Done
 	Ok(Ref::new(&self.ast,idx))
     }
 
     /// Parse a method declaration of the form `Type name([Type
     /// Identifier]*) Stmt.Block`.
-    pub fn parse_decl_method(&'b mut self) -> Result<Ref<'b>> {
-	// Type
-	let ret_type = self.parse_type()?;
-	// Identifier
-	let name = self.parse_identifier()?;
-	// "(" [Type Identifier]+ ")"
-	let params = self.parse_decl_parameters()?;
-	// "{" [Stmt]* "}"
-	let body = self.parse_stmt_block()?;
-	// // Apply source map
-	// //let attr = (self.mapper)("test");
-	//
-	let idx = self.ast.push(Node::DeclMethod(name,ret_type,params,body));
+    pub fn parse_decl_method(&'b mut self) -> Result<Decl> {
+	todo!("reinstate me");
+	// // Type
+	// let ret_type = self.parse_type()?;
+	// // Identifier
+	// let name = self.parse_identifier()?;
+	// // "(" [Type Identifier]+ ")"
+	// let params = self.parse_decl_parameters()?;
+	// // "{" [Stmt]* "}"
+	// let body = self.parse_stmt_block()?;
+	// // // Apply source map
+	// // //let attr = (self.mapper)("test");
 	// //
-	Ok(Ref::new(&self.ast,idx))
+	// let idx = self.ast.push(Node::DeclMethod(name,ret_type,params,body));
+	// // //
+	// Ok(Ref::new(&self.ast,idx))
     }
 
-    /// Parse a list of parameter declarations
-    pub fn parse_decl_parameters(&mut self) -> Result<Vec<Parameter>> {
-    	let mut params : Vec<Parameter> = vec![];
-    	// "("
-    	self.snap(TokenType::LeftBrace)?;
-    	// Keep going until a right brace
-    	while self.snap(TokenType::RightBrace).is_err() {
-    	    // Check if first time or not
-    	    if !params.is_empty() {
-    		// Not first time, so match comma
-    		self.snap(TokenType::Comma)?;
-    	    }
-    	    // Type
-    	    let f_type = self.parse_type()?;
-    	    // Identifier
-    	    let f_name = self.parse_identifier()?;
-    	    // 
-    	    params.push(Parameter{declared:f_type,name:f_name});
-    	}
-    	// Done
-    	Ok(params)
-    }
+    // /// Parse a list of parameter declarations
+    // pub fn parse_decl_parameters(&mut self) -> Result<Vec<Parameter>> {
+    // 	let mut params : Vec<Parameter> = vec![];
+    // 	// "("
+    // 	self.snap(TokenType::LeftBrace)?;
+    // 	// Keep going until a right brace
+    // 	while self.snap(TokenType::RightBrace).is_err() {
+    // 	    // Check if first time or not
+    // 	    if !params.is_empty() {
+    // 		// Not first time, so match comma
+    // 		self.snap(TokenType::Comma)?;
+    // 	    }
+    // 	    // Type
+    // 	    let f_type = self.parse_type()?;
+    // 	    // Identifier
+    // 	    let f_name = self.parse_identifier()?;
+    // 	    // 
+    // 	    params.push(Parameter{declared:f_type,name:f_name});
+    // 	}
+    // 	// Done
+    // 	Ok(params)
+    // }
 
-  // =========================================================================
+    // =========================================================================
     // Statements
     // =========================================================================    
 
-    /// Parse a block of zero or more statements surrounded by curly
-    /// braces.  For example, `{ int x = 1; x = x + 1; }`.
-    pub fn parse_stmt_block(&mut self) -> Result<Stmt> {
-    	let mut stmts : Vec<Stmt> = Vec::new();
-    	// "{"
-    	self.snap(TokenType::LeftCurly)?;
-    	// Keep going until a right curly
-    	while self.snap(TokenType::RightCurly).is_err() {
-    	    stmts.push(self.parse_stmt()?);
-    	}
-	// Allocate statement block
-	let index = self.ast.push(Node::StmtBlock(stmts));
-    	// Temporary for now
-    	Ok(Stmt{index})
-    }    
+    // /// Parse a block of zero or more statements surrounded by curly
+    // /// braces.  For example, `{ int x = 1; x = x + 1; }`.
+    // pub fn parse_stmt_block(&mut self) -> Result<Stmt> {
+    // 	let mut stmts : Vec<Stmt> = Vec::new();
+    // 	// "{"
+    // 	self.snap(TokenType::LeftCurly)?;
+    // 	// Keep going until a right curly
+    // 	while self.snap(TokenType::RightCurly).is_err() {
+    // 	    stmts.push(self.parse_stmt()?);
+    // 	}
+    // 	// Allocate statement block
+    // 	let index = self.ast.push(Node::StmtBlock(stmts));
+    // 	// Temporary for now
+    // 	Ok(Stmt{index})
+    // }    
     
-    /// Parse an arbitrary statement.
-    pub fn parse_stmt(&mut self) -> Result<Stmt> {
-    	let lookahead = self.lexer.peek();
-    	//
-    	match lookahead.kind {
-    	    _ => self.parse_unit_stmt()
-    	}
-    }
+    // /// Parse an arbitrary statement.
+    // pub fn parse_stmt(&mut self) -> Result<Stmt> {
+    // 	let lookahead = self.lexer.peek();
+    // 	//
+    // 	match lookahead.kind {
+    // 	    _ => self.parse_unit_stmt()
+    // 	}
+    // }
 
-    /// Parse a unit statement.  This one which does not contain other
-    /// statements, and is terminated with a ";".
-    pub fn parse_unit_stmt(&mut self) -> Result<Stmt> {
-    	let lookahead = self.lexer.peek();
-    	//
-    	let stmt = match lookahead.kind {
-    	    TokenType::Assert => {
-    	    	self.parse_stmt_assert()
-    	    }
-	    TokenType::Skip => {
-		self.parse_stmt_skip()
-	    }
-    	    _ => {
-    		return Err(Error::new(lookahead,"unknown token encountered"));
-    	    }
-    	};
-    	// ";"
-    	self.snap(TokenType::SemiColon)?;
-    	// Done
-    	stmt
-    }
+    // /// Parse a unit statement.  This one which does not contain other
+    // /// statements, and is terminated with a ";".
+    // pub fn parse_unit_stmt(&mut self) -> Result<Stmt> {
+    // 	let lookahead = self.lexer.peek();
+    // 	//
+    // 	let stmt = match lookahead.kind {
+    // 	    TokenType::Assert => {
+    // 	    	self.parse_stmt_assert()
+    // 	    }
+    // 	    TokenType::Skip => {
+    // 		self.parse_stmt_skip()
+    // 	    }
+    // 	    _ => {
+    // 		return Err(Error::new(lookahead,"unknown token encountered"));
+    // 	    }
+    // 	};
+    // 	// ";"
+    // 	self.snap(TokenType::SemiColon)?;
+    // 	// Done
+    // 	stmt
+    // }
 
-    pub fn parse_stmt_assert(&mut self) -> Result<Stmt> {
-    	// "assert"
-    	self.snap(TokenType::Assert)?;
-    	// Expr
-    	let expr = self.parse_expr()?;
-    	// Allocate node
-	let index = self.ast.push(Node::StmtAssert(expr));
-	// Done
-    	Ok(Stmt{index})	
-    }
+    // pub fn parse_stmt_assert(&mut self) -> Result<Stmt> {
+    // 	// "assert"
+    // 	self.snap(TokenType::Assert)?;
+    // 	// Expr
+    // 	let expr = self.parse_expr()?;
+    // 	// Allocate node
+    // 	let index = self.ast.push(Node::StmtAssert(expr));
+    // 	// Done
+    // 	Ok(Stmt{index})	
+    // }
 
-    pub fn parse_stmt_skip(&mut self) -> Result<Stmt> {
-    	// "skip"
-    	self.snap(TokenType::Skip)?;
-    	// Allocate node
-	let index = self.ast.push(Node::StmtSkip);
-	// Done
-    	Ok(Stmt{index})
-    }
+    // pub fn parse_stmt_skip(&mut self) -> Result<Stmt> {
+    // 	// "skip"
+    // 	self.snap(TokenType::Skip)?;
+    // 	// Allocate node
+    // 	let index = self.ast.push(Node::StmtSkip);
+    // 	// Done
+    // 	Ok(Stmt{index})
+    // }
 
-// // =========================================================================
-    // // Expressions
-    // // =========================================================================    
+    // =========================================================================
+    // Expressions
+    // =========================================================================    
 
-    pub fn parse_expr(&mut self) -> Result<Expr> {
-    	self.parse_expr_term()
-    }
+    // pub fn parse_expr(&mut self) -> Result<Expr> {
+    // 	self.parse_expr_term()
+    // }
 
-    pub fn parse_expr_term(&mut self) -> Result<Expr> {
-    	let lookahead = self.lexer.peek();
-    	//
-    	let index : usize = match lookahead.kind {
-    	    TokenType::False => {
-    		self.lexer.next();
-    		self.ast.push(Node::ExprBool(false))
-    	    }
-    	    TokenType::Integer => {
-    	    	self.lexer.next();
-    		self.ast.push(Node::ExprInt(lookahead.as_int()))	
-    	    }
-    	    TokenType::LeftBrace => {
-    	    	return self.parse_expr_bracketed()
-    	    }
-    	    TokenType::True => {
-    		self.lexer.next();
-    		self.ast.push(Node::ExprBool(true))
-    	    }
-    	    _ => {
-    		return Err(Error::new(lookahead,"unknown token encountered"))
-    	    }
-    	};
-	//
-	Ok(Expr{index})
-    }
+    // pub fn parse_expr_term(&mut self) -> Result<Expr> {
+    // 	let lookahead = self.lexer.peek();
+    // 	//
+    // 	let index : usize = match lookahead.kind {
+    // 	    TokenType::False => {
+    // 		self.lexer.next();
+    // 		self.ast.push(Node::ExprBool(false))
+    // 	    }
+    // 	    TokenType::Integer => {
+    // 	    	self.lexer.next();
+    // 		self.ast.push(Node::ExprInt(lookahead.as_int()))	
+    // 	    }
+    // 	    TokenType::LeftBrace => {
+    // 	    	return self.parse_expr_bracketed()
+    // 	    }
+    // 	    TokenType::True => {
+    // 		self.lexer.next();
+    // 		self.ast.push(Node::ExprBool(true))
+    // 	    }
+    // 	    _ => {
+    // 		return Err(Error::new(lookahead,"unknown token encountered"))
+    // 	    }
+    // 	};
+    // 	//
+    // 	Ok(Expr{index})
+    // }
 
-    pub fn parse_expr_bracketed(&mut self) -> Result<Expr> {
-    	// "("
-    	self.snap(TokenType::LeftBrace)?;
-    	// Expr
-    	let expr = self.parse_expr();
-    	// ")"
-    	self.snap(TokenType::RightBrace)?;
-    	//
-    	expr
-    }
+    // pub fn parse_expr_bracketed(&mut self) -> Result<Expr> {
+    // 	// "("
+    // 	self.snap(TokenType::LeftBrace)?;
+    // 	// Expr
+    // 	let expr = self.parse_expr();
+    // 	// ")"
+    // 	self.snap(TokenType::RightBrace)?;
+    // 	//
+    // 	expr
+    // }
     
     // =========================================================================
     // Types
@@ -271,140 +272,140 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 		// Something went wrong
 		Err(Error::new(lookahead,"unexpected end-of-file"))
 	    }
-	    TokenType::Ampersand => {
-	    	// Looks like a reference type
-	    	self.parse_type_ref()
-	    }
-	    TokenType::LeftCurly => {
-	    	// Looks like a record type
-	    	self.parse_type_record()
-	    }
-	    _ => {
-	    	// Could be an array type
-	    	self.parse_type_array()	    
-	    }
+	    // TokenType::Ampersand => {
+	    // 	// Looks like a reference type
+	    // 	self.parse_type_ref()
+	    // }
+	    // TokenType::LeftCurly => {
+	    // 	// Looks like a record type
+	    // 	self.parse_type_record()
+	    // }
+	    // _ => {
+	    // 	// Could be an array type
+	    // 	self.parse_type_array()	    
+	    // }
 	    _ => {
 		self.parse_type_base()	    
 	    }	    
 	}
     }
 
-    /// Parse a reference type, such as `&i32`, `&(i32[])`, `&&u16`,
-    /// etc.
-    pub fn parse_type_ref(&mut self) -> Result<Type> {
-    	let mut n = 1;
-    	// "&"
-    	self.snap(TokenType::Ampersand)?;
-    	// Check for nested references
-    	while self.snap(TokenType::Ampersand).is_ok() {
-    	    n = n + 1;
-    	}	
-    	// Type	
-    	let mut t = self.parse_type_bracketed()?;	
-    	// Unwind references
-    	for i in 0..n {
-	    let index = self.ast.push(Node::TypeReference(t));
-	    t = Type{index};
-    	}
-    	// Done
-    	Ok(t)
-    }
+    // /// Parse a reference type, such as `&i32`, `&(i32[])`, `&&u16`,
+    // /// etc.
+    // pub fn parse_type_ref(&mut self) -> Result<Type> {
+    // 	let mut n = 1;
+    // 	// "&"
+    // 	self.snap(TokenType::Ampersand)?;
+    // 	// Check for nested references
+    // 	while self.snap(TokenType::Ampersand).is_ok() {
+    // 	    n = n + 1;
+    // 	}	
+    // 	// Type	
+    // 	let mut t = self.parse_type_bracketed()?;	
+    // 	// Unwind references
+    // 	for i in 0..n {
+    // 	    let index = self.ast.push(Node::TypeReference(t));
+    // 	    t = Type{index};
+    // 	}
+    // 	// Done
+    // 	Ok(t)
+    // }
 
-    /// Parse a record type, such as `{ i32 f }`, `{ bool f, u64 f }`,
-    /// `{ &bool f, u64[] f }`, etc.
-    pub fn parse_type_record(&mut self) -> Result<Type> {
-    	let mut fields : Vec<(Type,String)> = vec![];
-    	// "{"
-    	self.snap(TokenType::LeftCurly)?;
-    	// Keep going until a right brace
-    	while self.snap(TokenType::RightCurly).is_err() {
-    	    // Check if first time or not
-    	    if !fields.is_empty() {
-    		// Not first time, so match comma
-    		self.snap(TokenType::Comma)?;
-    	    }
-    	    // Type
-    	    let f_type = self.parse_type()?;
-    	    // Identifier
-    	    let f_name = self.parse_identifier()?;
-    	    // 
-    	    fields.push((f_type,f_name));
-    	}
-    	// Done
-	let index = self.ast.push(Node::TypeRecord(fields));
-    	Ok(Type{index})
-    }
+    // /// Parse a record type, such as `{ i32 f }`, `{ bool f, u64 f }`,
+    // /// `{ &bool f, u64[] f }`, etc.
+    // pub fn parse_type_record(&mut self) -> Result<Type> {
+    // 	let mut fields : Vec<(Type,String)> = vec![];
+    // 	// "{"
+    // 	self.snap(TokenType::LeftCurly)?;
+    // 	// Keep going until a right brace
+    // 	while self.snap(TokenType::RightCurly).is_err() {
+    // 	    // Check if first time or not
+    // 	    if !fields.is_empty() {
+    // 		// Not first time, so match comma
+    // 		self.snap(TokenType::Comma)?;
+    // 	    }
+    // 	    // Type
+    // 	    let f_type = self.parse_type()?;
+    // 	    // Identifier
+    // 	    let f_name = self.parse_identifier()?;
+    // 	    // 
+    // 	    fields.push((f_type,f_name));
+    // 	}
+    // 	// Done
+    // 	let index = self.ast.push(Node::TypeRecord(fields));
+    // 	Ok(Type{index})
+    // }
 
-    /// Parse an array type, such as `i32[]`, `bool[][]`, etc.
-    pub fn parse_type_array(&'b mut self) -> Result<Type> {
-    	// Type
-    	let mut t = self.parse_type_bracketed()?;
-    	// ([])*
-    	while self.snap(TokenType::LeftSquare).is_ok() {
-    	    self.snap(TokenType::RightSquare)?;
-    	    let index = self.ast.push(Node::TypeArray(t));
-	    t = Type{index};
-    	}
-    	//
-    	Ok(t)
-    }
+    // /// Parse an array type, such as `i32[]`, `bool[][]`, etc.
+    // pub fn parse_type_array(&'b mut self) -> Result<Type> {
+    // 	// Type
+    // 	let mut t = self.parse_type_bracketed()?;
+    // 	// ([])*
+    // 	while self.snap(TokenType::LeftSquare).is_ok() {
+    // 	    self.snap(TokenType::RightSquare)?;
+    // 	    let index = self.ast.push(Node::TypeArray(t));
+    // 	    t = Type{index};
+    // 	}
+    // 	//
+    // 	Ok(t)
+    // }
 
-    /// Parse a type which may (or may not) be bracketed.  For
-    /// example, in `(&int)[]` the type `&int` is bracketed.
-    pub fn parse_type_bracketed(&'b mut self) -> Result<Type> {
-	// Try and match bracket!
-	if self.snap(TokenType::LeftBrace).is_ok() {
-	    // Bingo!
-	    let typ_e = self.parse_type()?;
-	    // Must match closing brace
-	    self.snap(TokenType::RightBrace)?;
-	    // Done
-	    Ok(typ_e)
-	} else {
-	    self.parse_type_base()
-	}
-    }
+    // /// Parse a type which may (or may not) be bracketed.  For
+    // /// example, in `(&int)[]` the type `&int` is bracketed.
+    // pub fn parse_type_bracketed(&'b mut self) -> Result<Type> {
+    // 	// Try and match bracket!
+    // 	if self.snap(TokenType::LeftBrace).is_ok() {
+    // 	    // Bingo!
+    // 	    let typ_e = self.parse_type()?;
+    // 	    // Must match closing brace
+    // 	    self.snap(TokenType::RightBrace)?;
+    // 	    // Done
+    // 	    Ok(typ_e)
+    // 	} else {
+    // 	    self.parse_type_base()
+    // 	}
+    // }
     
     pub fn parse_type_base(&'b mut self) -> Result<Type> {
 	let lookahead = self.lexer.peek();
 	// Look at what we've got!
 	let index : usize = match lookahead.kind {
 	    TokenType::Null => {
-		self.ast.push(Node::TypeNull)
+		self.ast.push(Node::TypeNull, NO_CHILDREN)
 	    }
 	    //
 	    TokenType::Bool => {
-		self.ast.push(Node::TypeBool)
+		self.ast.push(Node::TypeBool, NO_CHILDREN)
 	    }
 	    //
 	    TokenType::I8 => {
-		self.ast.push(Node::TypeInt(true,8))
+		self.ast.push(Node::TypeInt(true,8), NO_CHILDREN)
 	    }
 	    TokenType::I16 => {
-		self.ast.push(Node::TypeInt(true,16))
+		self.ast.push(Node::TypeInt(true,16), NO_CHILDREN)
 	    }
 	    TokenType::I32 => {
-		self.ast.push(Node::TypeInt(true,32))
+		self.ast.push(Node::TypeInt(true,32), NO_CHILDREN)
 	    }
 	    TokenType::I64 => {
-		self.ast.push(Node::TypeInt(true,64))
+		self.ast.push(Node::TypeInt(true,64), NO_CHILDREN)
 	    }
 	    //
 	    TokenType::U8 => {
-		self.ast.push(Node::TypeInt(false,8))
+		self.ast.push(Node::TypeInt(false,8), NO_CHILDREN)
 	    }
 	    TokenType::U16 => {
-		self.ast.push(Node::TypeInt(false,16))
+		self.ast.push(Node::TypeInt(false,16), NO_CHILDREN)
 	    }
 	    TokenType::U32 => {
-		self.ast.push(Node::TypeInt(false,32))
+		self.ast.push(Node::TypeInt(false,32), NO_CHILDREN)
 	    }
 	    TokenType::U64 => {
-		self.ast.push(Node::TypeInt(false,64))
+		self.ast.push(Node::TypeInt(false,64), NO_CHILDREN)
 	    }
 	    //
 	    TokenType::Void => {
-		self.ast.push(Node::TypeVoid)
+		self.ast.push(Node::TypeVoid, NO_CHILDREN)
 	    }
 	    _ => {
 		return Err(Error::new(lookahead,"unknown token encountered"));

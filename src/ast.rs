@@ -1,6 +1,14 @@
 use std::fmt;
 use std::vec;
 use std::convert::From;
+use syntactic_heap::SyntacticHeap;
+use syntactic_heap::Ref;
+use syntactic_heap::ToRef;
+
+pub const NO_CHILDREN : &[usize] = &[];
+
+#[derive(Clone,Debug,PartialEq)]
+pub struct Decl { pub index: usize }
 
 #[derive(Clone,Debug,PartialEq)]
 pub struct Stmt { pub index: usize }
@@ -21,160 +29,67 @@ pub struct Parameter {
 #[derive(Clone,Debug,PartialEq)]
 pub enum Node {
     // Declarations
-    DeclType(String,Type),    
-    DeclMethod(String,Type,Vec<Parameter>,Stmt),
+    DeclType(String),
+    // DeclMethod(String,Type,Vec<Parameter>,Stmt),
     // Statements
-    StmtAssert(Expr),
-    StmtBlock(Vec<Stmt>),
-    StmtSkip,    
+    // StmtAssert(Expr),
+    // StmtBlock(Vec<Stmt>),
+    // StmtSkip,    
     // Expressions
-    ExprBool(bool),
-    ExprInt(i32),    
+    // ExprBool(bool),
+    // ExprInt(i32),    
     // Types
-    TypeArray(Type),
+    // TypeArray(Type),
     TypeBool,
     TypeInt(bool,u8),
     TypeNull,
-    TypeRecord(Vec<(Type,String)>),
-    TypeReference(Type),    
+    // TypeRecord(Vec<(Type,String)>),
+    // TypeReference(Type),    
     TypeVoid
 }
 
 // =============================================================================
-// Node Reference
+// Node References
 // =============================================================================
 
-/// A temporary reference into an AbstractSyntaxTree.  This is really
-/// a wrapper for a node index into that tree.
-#[derive(Copy,Clone)]
-pub struct Ref<'a> {
-    parent: &'a AbstractSyntaxTree,
-    index: usize
-}
-
-/// Allow conversion from things to references, provided a suitable
-/// parent pointer is available.
-pub trait ToRef {
-    fn to_ref<'a>(&self, ast: &'a AbstractSyntaxTree) -> Ref<'a>;
-}
-
-impl<'a> Ref<'a> {
-    pub fn new(parent: &'a AbstractSyntaxTree, index: usize) -> Self {
-	Ref{parent,index}
+impl From<Ref<'_,Node>> for Decl {
+    fn from(r: Ref<'_,Node>) -> Decl {
+	Decl{index:r.index}
     }
 }
 
-impl fmt::Display for Ref<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-	let n = &self.parent.nodes[self.index];
-	match n {
-	    Node::DeclType(s,t) => {
-		write!(f,"type {}={}",s,t.to_ref(self.parent))
-	    }
-	    Node::DeclMethod(n,r,ps,body) => {
-		let mut s = String::new();
-		let mut b = true;		
-		s.push('(');    
-		for p in ps {
-		    if !b { s.push(','); }
-		    b = false;		    
-		    s.push_str(&p.declared.to_ref(self.parent).to_string());
-		    s.push_str(" ");		    
-		    s.push_str(&p.name);
-		}
-		s.push(')');		
-		write!(f,"{} {}{} {}",r.to_ref(self.parent),n,s,body.to_ref(self.parent))		       
-	    }
-	    Node::StmtAssert(expr) => {
-		write!(f,"assert {};",expr.to_ref(self.parent))		
-	    }
-	    Node::StmtBlock(stmts) => {
-		let mut s = String::new();
-		s.push('{');    
-		for stmt in stmts {
-		    s.push_str(&stmt.to_ref(self.parent).to_string());
-		}
-		s.push('}');
-		write!(f,"{}",s)
-	    }
-	    Node::StmtSkip => {
-		write!(f,"skip;")
-	    }
-	    Node::ExprBool(l) => {
-		write!(f,"{}",l)
-	    }
-	    Node::ExprInt(i) => {
-		write!(f,"{}",i)
-	    }
-	    Node::TypeArray(t) => {
-		write!(f,"{}[]",t.to_ref(self.parent))
-	    }
-	    Node::TypeBool => {
-		write!(f,"bool")
-	    }	    
-	    Node::TypeInt(s,w) => {
-		if *s {
-		    write!(f,"i{}",w)
-		} else {
-		    write!(f,"u{}",w)
-		}
-	    }
-	    Node::TypeNull => {
-		write!(f,"null")
-	    }
-	    Node::TypeRecord(fields) => {
-		let mut s = String::new();
-		let mut b = true;
-		s.push('{');    
-		for (t,n) in fields {
-		    if !b { s.push(','); }
-		    b = false;
-		    s.push_str(&t.to_ref(self.parent).to_string());
-		    s.push_str(" ");
-		    s.push_str(&n);
-		}
-		s.push('}');
-		write!(f,"{}",s)
-	    }
-	    Node::TypeReference(t) => {
-		write!(f,"&{}",t.to_ref(self.parent))
-	    }
-	    Node::TypeVoid => {
-		write!(f,"void")
-	    }	    
-	    _ => {
-		write!(f,"???")
-	    }
-	}
-    }
-}
-
-impl From<Ref<'_>> for Stmt {
-    fn from(r: Ref<'_>) -> Stmt {
+impl From<Ref<'_,Node>> for Stmt {
+    fn from(r: Ref<'_,Node>) -> Stmt {
 	Stmt{index:r.index}
     }
 }
 
-impl From<Ref<'_>> for Type {
-    fn from(r: Ref<'_>) -> Type {
+impl From<Ref<'_,Node>> for Type {
+    fn from(r: Ref<'_,Node>) -> Type {
 	Type{index:r.index}
     }
 }
 
+impl ToRef for Decl {
+    fn to_ref<'a>(&self, parent: &'a AbstractSyntaxTree) -> Ref<'a,Node> {
+	Ref::new(parent,self.index)
+    }
+}
+
 impl ToRef for Stmt {
-    fn to_ref<'a>(&self, parent: &'a AbstractSyntaxTree) -> Ref<'a> {
+    fn to_ref<'a>(&self, parent: &'a AbstractSyntaxTree) -> Ref<'a,Node> {
 	Ref::new(parent,self.index)
     }
 }
 
 impl ToRef for Expr {
-    fn to_ref<'a>(&self, parent: &'a AbstractSyntaxTree) -> Ref<'a> {
+    fn to_ref<'a>(&self, parent: &'a AbstractSyntaxTree) -> Ref<'a,Node> {
 	Ref::new(parent,self.index)
     }
 }
 
 impl ToRef for Type {
-    fn to_ref<'a>(&self, parent: &'a AbstractSyntaxTree) -> Ref<'a> {
+    fn to_ref<'a>(&self, parent: &'a AbstractSyntaxTree) -> Ref<'a,Node> {
 	Ref::new(parent,self.index)
     }
 }
@@ -183,99 +98,12 @@ impl ToRef for Type {
 // Abstract Syntax Tree
 // =============================================================================
 
-pub struct AbstractSyntaxTree {
-    nodes: Vec<Node>
-}
-
-impl AbstractSyntaxTree {
-    pub fn new() -> AbstractSyntaxTree {
-	AbstractSyntaxTree{nodes: Vec::new()}
-    }
-    /// Determine how many nodes are in this AST.
-    pub fn len(&self) -> usize {
-	self.nodes.len()
-    }
-    /// Access a given node
-    pub fn get(&self, index: usize) -> &Node {
-	&self.nodes[index]
-    }
-    /// Push a new node onto the tree
-    pub fn push(&mut self, n: Node) -> usize {
-	// Save current size of tree
-	let idx = self.nodes.len();
-	// Push new node in place	
-	self.nodes.push(n);
-	// Return its index
-	idx
-    }
-}
-
-impl fmt::Display for AbstractSyntaxTree {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-	write!(f,"{}",to_string(&self.nodes))
-    }
-}
-
+pub type AbstractSyntaxTree = SyntacticHeap<Node>;
+ 
 // =============================================================================
 // Debug
 // =============================================================================
 
-
-impl fmt::Display for Node {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-	match self {
-	    Node::DeclType(s,t) => {
-		write!(f,"DeclType({},{})",s,t)
-	    }
-	    Node::DeclMethod(n,r,ps,b) => {
-		let pstr = to_string(ps);
-		write!(f,"DeclMethod({},{},{},{})",n,r,pstr,b)		       
-	    }
-	    Node::TypeArray(t) => {
-		write!(f,"TypeArray({})",t)
-	    }
-	    Node::TypeBool => {
-		write!(f,"TypeBool")
-	    }	    
-	    Node::TypeInt(s,w) => {
-		write!(f,"TypeInt({},{})",s,w)
-	    }
-	    Node::TypeNull => {
-		write!(f,"TypeNull")
-	    }
-	    Node::TypeReference(t) => {
-		write!(f,"TypeReference({})",t)
-	    }
-	    _ => {
-		write!(f,"(????)")
-	    }
-	}
-    }
-}
-
-impl fmt::Display for Parameter {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {	
-	write!(f,"Param({},{})",self.declared,self.name)
-    }
-}
-
-impl fmt::Display for Stmt {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {	
-	write!(f,"Stmt({})",self.index)
-    }
-}
-
-impl fmt::Display for Expr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {	
-	write!(f,"Expr({})",self.index)
-    }
-}
-
-impl fmt::Display for Type {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {	
-	write!(f,"Type({})",self.index)
-    }
-}
 
 fn to_string<T:fmt::Display>(items : &[T]) -> String {
     let mut s = String::new();

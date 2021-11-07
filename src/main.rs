@@ -45,8 +45,8 @@ fn repl() {
 	    print_error(line,d.err().unwrap());
 	} else {
 	    let decl = d.ok().unwrap();
-	    println!("Parsed: {}",&decl);	    
-	    println!("Parsed: {}",&ast);
+	    // println!("Parsed: {}",&decl);	    
+	    // println!("Parsed: {}",&ast);
 	    // // Now type check it!
 	    // let typing = TypeChecker::new(|i,t| type_map.map(i,t)).check(&ast);
 	    // //
