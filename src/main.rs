@@ -4,16 +4,14 @@ use std::io::Write;
 mod ast;
 mod lexer;
 mod parser;
-mod typer;
 mod source_map;
-mod type_map;
+//mod typer;
+//mod type_map;
 mod error;
 
 use crate::parser::Parser;
 use crate::parser::Error;
-use crate::typer::TypeChecker;
 use crate::source_map::SourceMap;
-use crate::type_map::TypeMap;
 use crate::error::SyntaxError;
 use crate::ast::AbstractSyntaxTree;
 
@@ -38,15 +36,16 @@ fn repl() {
 	// Construct temporary source map
 	let mut source_map = SourceMap::new(line);
 	// Construct temporary type map
-	let mut type_map = TypeMap::new();
+	// let mut type_map = TypeMap::new();
 	// Parse it!
-	let d = Parser::new(line, &mut ast, |i,s| source_map.map(i,s)).parse_decl();
+	let mut p = Parser::new(line, &mut ast, |i,s| source_map.map(i,s));
+	let d = p.parse_decl();
 	//
 	if d.is_err() {
 	    print_error(line,d.err().unwrap());
 	} else {
-	    let ast = d.ok().unwrap();
-	    
+	    let decl = d.ok().unwrap();
+	    // println!("Parsed: {}",&decl);	    
 	    // println!("Parsed: {}",&ast);
 	    // // Now type check it!
 	    // let typing = TypeChecker::new(|i,t| type_map.map(i,t)).check(&ast);
