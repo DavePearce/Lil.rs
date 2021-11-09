@@ -15,7 +15,7 @@ use crate::ast::*;
 pub struct Error {
     pub start: usize,
     pub end: usize,
-    pub message: &'static str    
+    pub message: &'static str
 }
 
 pub type Result<T> = result::Result<T, Error>;
@@ -42,23 +42,23 @@ where F : FnMut(usize,&'a str) {
     ast: &'a mut AbstractSyntaxTree,
     /// Provides mechanism for source maps
     mapper : F
-	
+
 }
 
 impl<'a,'b,F> Parser<'a,F>
 where 'a :'b, F : FnMut(usize,&'a str) {
-   
+
     pub fn new(input: &'a str, ast: &'a mut AbstractSyntaxTree, mapper : F) -> Self {
 	Self { lexer: Lexer::new(input), ast, mapper }
     }
 
     // =========================================================================
     // Accessors / Mutators
-    // =========================================================================    
+    // =========================================================================
 
     // =========================================================================
     // Declarations
-    // =========================================================================    
+    // =========================================================================
 
     /// Parse an arbitrary declaration
     pub fn parse_decl(&'b mut self) -> Result<Decl> {
@@ -73,7 +73,7 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 	    }
 	}
     }
-    
+
     /// Parse a type declaration of the from `type name is type;`.
     pub fn parse_decl_type(&'b mut self) -> Result<Decl> {
 	// "type"
@@ -90,10 +90,8 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 	let slice = &self.lexer.input[start.start .. end.end()];
 	// Apply source map
 	//let attr = (self.mapper)(slice);
-	//
-	let idx = self.ast.push(Node::DeclType(name),&[typ_e.index]);
 	// Done
-	Ok(Ref::new(&self.ast,idx))
+	Ok(Decl::new(self.ast,Node::DeclType(name,typ_e)))
     }
 
     /// Parse a method declaration of the form `Type name([Type
@@ -132,7 +130,7 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     // 	    let f_type = self.parse_type()?;
     // 	    // Identifier
     // 	    let f_name = self.parse_identifier()?;
-    // 	    // 
+    // 	    //
     // 	    params.push(Parameter{declared:f_type,name:f_name});
     // 	}
     // 	// Done
@@ -141,7 +139,7 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 
     // =========================================================================
     // Statements
-    // =========================================================================    
+    // =========================================================================
 
     // /// Parse a block of zero or more statements surrounded by curly
     // /// braces.  For example, `{ int x = 1; x = x + 1; }`.
@@ -157,8 +155,8 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     // 	let index = self.ast.push(Node::StmtBlock(stmts));
     // 	// Temporary for now
     // 	Ok(Stmt{index})
-    // }    
-    
+    // }
+
     // /// Parse an arbitrary statement.
     // pub fn parse_stmt(&mut self) -> Result<Stmt> {
     // 	let lookahead = self.lexer.peek();
@@ -198,7 +196,7 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     // 	// Allocate node
     // 	let index = self.ast.push(Node::StmtAssert(expr));
     // 	// Done
-    // 	Ok(Stmt{index})	
+    // 	Ok(Stmt{index})
     // }
 
     // pub fn parse_stmt_skip(&mut self) -> Result<Stmt> {
@@ -212,7 +210,7 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 
     // =========================================================================
     // Expressions
-    // =========================================================================    
+    // =========================================================================
 
     // pub fn parse_expr(&mut self) -> Result<Expr> {
     // 	self.parse_expr_term()
@@ -228,7 +226,7 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     // 	    }
     // 	    TokenType::Integer => {
     // 	    	self.lexer.next();
-    // 		self.ast.push(Node::ExprInt(lookahead.as_int()))	
+    // 		self.ast.push(Node::ExprInt(lookahead.as_int()))
     // 	    }
     // 	    TokenType::LeftBrace => {
     // 	    	return self.parse_expr_bracketed()
@@ -255,15 +253,15 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     // 	//
     // 	expr
     // }
-    
+
     // =========================================================================
     // Types
-    // =========================================================================    
+    // =========================================================================
 
     pub fn parse_type(&mut self) -> Result<Type> {
 	self.parse_type_compound()
     }
-    
+
     pub fn parse_type_compound(&mut self) -> Result<Type> {
 	let lookahead = self.lexer.peek();
 	// Attemp to distinguish
@@ -282,11 +280,11 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 	    // }
 	    // _ => {
 	    // 	// Could be an array type
-	    // 	self.parse_type_array()	    
+	    // 	self.parse_type_array()
 	    // }
 	    _ => {
-		self.parse_type_base()	    
-	    }	    
+		self.parse_type_base()
+	    }
 	}
     }
 
@@ -299,9 +297,9 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     // 	// Check for nested references
     // 	while self.snap(TokenType::Ampersand).is_ok() {
     // 	    n = n + 1;
-    // 	}	
-    // 	// Type	
-    // 	let mut t = self.parse_type_bracketed()?;	
+    // 	}
+    // 	// Type
+    // 	let mut t = self.parse_type_bracketed()?;
     // 	// Unwind references
     // 	for i in 0..n {
     // 	    let index = self.ast.push(Node::TypeReference(t));
@@ -328,7 +326,7 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     // 	    let f_type = self.parse_type()?;
     // 	    // Identifier
     // 	    let f_name = self.parse_identifier()?;
-    // 	    // 
+    // 	    //
     // 	    fields.push((f_type,f_name));
     // 	}
     // 	// Done
@@ -365,47 +363,47 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     // 	    self.parse_type_base()
     // 	}
     // }
-    
+
     pub fn parse_type_base(&'b mut self) -> Result<Type> {
 	let lookahead = self.lexer.peek();
 	// Look at what we've got!
-	let index : usize = match lookahead.kind {
+	let typ_e : Type = match lookahead.kind {
 	    TokenType::Null => {
-		self.ast.push(Node::TypeNull, NO_CHILDREN)
+		Type::new(self.ast,Node::TypeNull)
 	    }
 	    //
 	    TokenType::Bool => {
-		self.ast.push(Node::TypeBool, NO_CHILDREN)
+                Type::new(self.ast,Node::TypeBool)
 	    }
 	    //
 	    TokenType::I8 => {
-		self.ast.push(Node::TypeInt(true,8), NO_CHILDREN)
+                Type::new(self.ast,Node::TypeInt(true,8))
 	    }
 	    TokenType::I16 => {
-		self.ast.push(Node::TypeInt(true,16), NO_CHILDREN)
+                Type::new(self.ast,Node::TypeInt(true,16))
 	    }
 	    TokenType::I32 => {
-		self.ast.push(Node::TypeInt(true,32), NO_CHILDREN)
+                Type::new(self.ast,Node::TypeInt(true,32))
 	    }
 	    TokenType::I64 => {
-		self.ast.push(Node::TypeInt(true,64), NO_CHILDREN)
+                Type::new(self.ast,Node::TypeInt(true,64))
 	    }
 	    //
 	    TokenType::U8 => {
-		self.ast.push(Node::TypeInt(false,8), NO_CHILDREN)
+                Type::new(self.ast,Node::TypeInt(false,8))
 	    }
 	    TokenType::U16 => {
-		self.ast.push(Node::TypeInt(false,16), NO_CHILDREN)
+                Type::new(self.ast,Node::TypeInt(false,16))
 	    }
 	    TokenType::U32 => {
-		self.ast.push(Node::TypeInt(false,32), NO_CHILDREN)
+                Type::new(self.ast,Node::TypeInt(false,32))
 	    }
 	    TokenType::U64 => {
-		self.ast.push(Node::TypeInt(false,64), NO_CHILDREN)
+                Type::new(self.ast,Node::TypeInt(false,64))
 	    }
 	    //
 	    TokenType::Void => {
-		self.ast.push(Node::TypeVoid, NO_CHILDREN)
+                Type::new(self.ast,Node::TypeVoid)
 	    }
 	    _ => {
 		return Err(Error::new(lookahead,"unknown token encountered"));
@@ -414,28 +412,28 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 	// Move over it
 	self.lexer.next();
 	//
-	Ok(Type{index})
+	Ok(typ_e)
     }
-    
+
     // =========================================================================
     // Misc
     // =========================================================================
-    
+
     pub fn parse_identifier(&mut self) -> Result<String> {
 	let tok = self.snap(TokenType::Identifier)?;
 	Ok(tok.as_string())
     }
-    
+
     // =========================================================================
     // Helpers
-    // =========================================================================        
+    // =========================================================================
 
     // fn source_attr(&self, first : Token<'a>, last: Token<'a>) -> Attributes {
     // 	let start = first.start;
     // 	let end = last.end();
     // 	Attributes{start,end}
     // }
-    
+
     /// Match a given token type in the current stream.  If the kind
     /// matches, then the token stream advances.  Otherwise, it
     /// remains at the same position and an error is returned.
@@ -468,109 +466,109 @@ fn test_type_01() {
 }
 
 #[test]
-fn test_type_02() { 
+fn test_type_02() {
     check_error("type nat i8;");
 }
 
 #[test]
-fn test_type_03() { 
+fn test_type_03() {
     let ast = check_parse("type t = bool;");
     assert!(matches!(ast.get(0),Node::TypeBool));
 }
 
 // #[test]
-// fn test_type_04() { 
+// fn test_type_04() {
 //     let d = Parser::new("type nat = i8;").parse().unwrap();
 //     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Int8 ));
 // }
 
 // #[test]
-// fn test_type_05() { 
+// fn test_type_05() {
 //     let d = Parser::new("type nat = i16;").parse().unwrap();
 //     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Int16 ));
 // }
 
 // #[test]
-// fn test_type_06() { 
+// fn test_type_06() {
 //     let d = Parser::new("type nat = i32;").parse().unwrap();
 //     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Int32 ));
 // }
 
 // #[test]
-// fn test_type_07() { 
+// fn test_type_07() {
 //     let d = Parser::new("type nat = i64;").parse().unwrap();
 //     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Int64 ));
 // }
 
 // #[test]
-// fn test_type_08() { 
+// fn test_type_08() {
 //     let d = Parser::new("type nat = u8;").parse().unwrap();
 //     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Uint8 ));
 // }
 
 // #[test]
-// fn test_type_09() { 
+// fn test_type_09() {
 //     let d = Parser::new("type nat = u16;").parse().unwrap();
 //     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Uint16 ));
 // }
 
 // #[test]
-// fn test_type_10() { 
+// fn test_type_10() {
 //     let d = Parser::new("type nat = u32;").parse().unwrap();
 //     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Uint32 ));
 // }
 
 // #[test]
-// fn test_type_11() { 
+// fn test_type_11() {
 //     let d = Parser::new("type nat = u64;").parse().unwrap();
 //     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Uint64 ));
 // }
 
 // #[test]
-// fn test_type_12() { 
+// fn test_type_12() {
 //     let d = Parser::new("type intarr = i32[];").parse().unwrap();
 //     assert_eq!(d,Decl::DeclType("intarr".to_string(), Array(Type::Int32)));
 // }
 
 // #[test]
-// fn test_type_13() { 
+// fn test_type_13() {
 //     let d = Parser::new("type intarrarr = i32[][];").parse().unwrap();
 //     assert_eq!(d,Decl::DeclType("intarrarr".to_string(), Array(Array(Type::Int32))));
 // }
 
 // #[test]
-// fn test_type_14() { 
+// fn test_type_14() {
 //     let d = Parser::new("type r_int = &i16;").parse().unwrap();
 //     assert_eq!(d,Decl::DeclType("r_int".to_string(), Ref(Type::Int16)));
 // }
 
 // #[test]
-// fn test_type_15() { 
+// fn test_type_15() {
 //     let d = Parser::new("type r_int = &&i16;").parse().unwrap();
 //     assert_eq!(d,Decl::DeclType("r_int".to_string(), Ref(Ref(Type::Int16))));
 // }
 
 // #[test]
-// fn test_type_16() { 
+// fn test_type_16() {
 //     let d = Parser::new("type rec = {i64 f};").parse().unwrap();
 //     assert_eq!(d,Decl::DeclType("rec".to_string(), Record(&[(Type::Int64,"f".to_string())])));
 // }
 
 // #[test]
-// fn test_type_17() { 
+// fn test_type_17() {
 //     let d = Parser::new("type rec = {i64 f, u32 g};").parse().unwrap();
 //     let fields = [(Type::Int64,"f".to_string()), (Type::Uint32,"g".to_string())];
 //     assert_eq!(d,Decl::DeclType("rec".to_string(), Record(&fields)));
 // }
 
 // #[test]
-// fn test_type_18() { 
+// fn test_type_18() {
 //     let d = Parser::new("type piarr = (&u32)[];").parse().unwrap();
 //     assert_eq!(d,Decl::DeclType("piarr".to_string(), Array(Ref(Type::Uint32))));
 // }
 
 // #[test]
-// fn test_type_19() { 
+// fn test_type_19() {
 //     let d = Parser::new("type rec = {&i8 f, u16[] g};").parse().unwrap();
 //     let fields = [(Ref(Type::Int8),"f".to_string()), (Array(Type::Uint16),"g".to_string())];
 //     assert_eq!(d,Decl::DeclType("rec".to_string(), Record(&fields)));
@@ -581,37 +579,37 @@ fn test_type_03() {
 // ======================================================
 
 // #[test]
-// fn test_method_01() { 
+// fn test_method_01() {
 //     let d = Parser::new("voi").parse().unwrap();
 //     assert_eq!(d,Decl::Error);
 // }
 
 // #[test]
-// fn test_method_02() { 
+// fn test_method_02() {
 //     let d = Parser::new("void").parse().unwrap();
 //     assert_eq!(d,Decl::Error);
 // }
 
 // #[test]
-// fn test_method_03() { 
+// fn test_method_03() {
 //     let d = Parser::new("void f").parse().unwrap();
 //     assert_eq!(d,Decl::Error);
 // }
 
 // #[test]
-// fn test_method_04() { 
+// fn test_method_04() {
 //     let d = Parser::new("void f(").parse().unwrap();
 //     assert_eq!(d,Decl::Error);
 // }
 
 // #[test]
-// fn test_method_05() { 
+// fn test_method_05() {
 //     let d = Parser::new("void f() {").parse().unwrap();
 //     assert_eq!(d,Decl::Error);
 // }
 
 // #[test]
-// fn test_method_06() { 
+// fn test_method_06() {
 //     let d = Parser::new("void f() {}").parse().unwrap();
 //     //
 //     match d {
@@ -628,7 +626,7 @@ fn test_type_03() {
 // }
 
 // #[test]
-// fn test_method_07() { 
+// fn test_method_07() {
 //     let d = Parser::new("bool f(i32 x) {}").parse().unwrap();
 //     //
 //     match d {
@@ -646,7 +644,7 @@ fn test_type_03() {
 // }
 
 // #[test]
-// fn test_method_08() { 
+// fn test_method_08() {
 //     let d = Parser::new("bool f(i32 i, bool b) {}").parse().unwrap();
 //     //
 //     match d {
@@ -665,7 +663,7 @@ fn test_type_03() {
 // }
 
 // #[test]
-// fn test_method_09() { 
+// fn test_method_09() {
 //     let d = Parser::new("void f() { assert true; }").parse().unwrap();
 //     assert!(matches!(d, Decl::DeclMethod { .. }));
 // }
@@ -675,19 +673,19 @@ fn test_type_03() {
 // ======================================================
 
 // #[test]
-// fn test_stmt_01() { 
+// fn test_stmt_01() {
 //     let s = Parser::new("asse").parse_stmt();
 //     assert!(s.is_err());
 // }
 
 // #[test]
-// fn test_stmt_02() { 
+// fn test_stmt_02() {
 //     let s = Parser::new("assert").parse_stmt();
 //     assert!(s.is_err());
 // }
 
 // #[test]
-// fn test_stmt_03() { 
+// fn test_stmt_03() {
 //     let s = Parser::new("assert true").parse_stmt();
 //     assert!(s.is_err());
 // }
