@@ -17,8 +17,8 @@ pub type AbstractSyntaxTree = SyntacticHeap<Node>;
 #[derive(Clone,Debug,PartialEq)]
 pub enum Node {
     // Declarations
-    DeclType(String,Type),
-    // DeclMethod(String,Type,Vec<Parameter>,Stmt),
+    TypeDecl(String,Type),
+    MethodDecl(String,Type,Vec<Parameter>,Stmt),
     // Statements
     // StmtAssert(Expr),
     // StmtBlock(Vec<Stmt>),
@@ -27,13 +27,13 @@ pub enum Node {
     // ExprBool(bool),
     // ExprInt(i32),
     // Types
-    TypeArray(Type),
-    TypeBool,
-    TypeInt(bool,u8),
-    TypeNull,
-    TypeRecord(Vec<(Type,String)>),
-    TypeReference(Type),
-    TypeVoid
+    ArrayType(Type),
+    BoolType,
+    IntType(bool,u8),
+    NullType,
+    RecordType(Vec<(Type,String)>),
+    ReferenceType(Type),
+    VoidType
 }
 
 // =============================================================================
@@ -63,7 +63,8 @@ impl Decl {
     /// Determine whether a given term is a declaration or not.
     pub fn is(t: &Node) -> bool {
         match t {
-            Node::DeclType(_,_) => true,
+	    Node::MethodDecl(_,_,_,_) => true,	    
+            Node::TypeDecl(_,_) => true,
             _ => false
         }
     }
@@ -104,13 +105,13 @@ impl Type {
     /// Determine whether a given term is a type (or not).
     pub fn is(ast: &AbstractSyntaxTree, t: &Node) -> bool {
         match t {
-            Node::TypeBool => true,
-            Node::TypeInt(_,_) => true,
-            Node::TypeNull => true,
-            Node::TypeVoid => true,
-            Node::TypeArray(t) => Type::is(ast,ast.get(t.index)),
-            Node::TypeReference(t) => Type::is(ast,ast.get(t.index)),
-            Node::TypeRecord(fs) => {
+            Node::BoolType => true,
+            Node::IntType(_,_) => true,
+            Node::NullType => true,
+            Node::VoidType => true,
+            Node::ArrayType(t) => Type::is(ast,ast.get(t.index)),
+            Node::ReferenceType(t) => Type::is(ast,ast.get(t.index)),
+            Node::RecordType(fs) => {
                 for (t,s) in fs {
                     if !Type::is(ast,ast.get(t.index)) {
                         return false;
@@ -152,11 +153,11 @@ impl From<Ref<'_,Node>> for Type {
 impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Node::DeclType(n,t) => {
-                write!(f,"DeclType({},{})",n,t.index)
+            Node::TypeDecl(n,t) => {
+                write!(f,"TypeDecl({},{})",n,t.index)
             }
-            Node::TypeArray(t) => {
-                write!(f,"TypeArray({})",t.index)
+            Node::ArrayType(t) => {
+                write!(f,"ArrayType({})",t.index)
             }
             // Default for those without children
             _ => write!(f,"{:?}",self)

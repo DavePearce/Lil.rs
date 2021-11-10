@@ -91,7 +91,7 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 	// Apply source map
 	//let attr = (self.mapper)(slice);
 	// Done
-	Ok(Decl::new(self.ast,Node::DeclType(name,typ_e)))
+	Ok(Decl::new(self.ast,Node::TypeDecl(name,typ_e)))
     }
 
     /// Parse a method declaration of the form `Type name([Type
@@ -299,7 +299,7 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     	let mut t = self.parse_type_bracketed()?;
     	// Unwind references
     	for i in 0..n {
-            t = Type::new(self.ast,Node::TypeReference(t));
+            t = Type::new(self.ast,Node::ReferenceType(t));
     	}
     	// Done
     	Ok(t)
@@ -326,7 +326,7 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     	    fields.push((f_type,f_name));
     	}
     	// Done
-    	Ok(Type::new(self.ast,Node::TypeRecord(fields)))
+    	Ok(Type::new(self.ast,Node::RecordType(fields)))
     }
 
     /// Parse an array type, such as `i32[]`, `bool[][]`, etc.
@@ -336,7 +336,7 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     	// ([])*
     	while self.snap(TokenType::LeftSquare).is_ok() {
     	    self.snap(TokenType::RightSquare)?;
-            t = Type::new(self.ast,Node::TypeArray(t));
+            t = Type::new(self.ast,Node::ArrayType(t));
     	}
     	//
     	Ok(t)
@@ -363,41 +363,41 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 	// Look at what we've got!
 	let typ_e : Type = match lookahead.kind {
 	    TokenType::Null => {
-		Type::new(self.ast,Node::TypeNull)
+		Type::new(self.ast,Node::NullType)
 	    }
 	    //
 	    TokenType::Bool => {
-                Type::new(self.ast,Node::TypeBool)
+                Type::new(self.ast,Node::BoolType)
 	    }
 	    //
 	    TokenType::I8 => {
-                Type::new(self.ast,Node::TypeInt(true,8))
+                Type::new(self.ast,Node::IntType(true,8))
 	    }
 	    TokenType::I16 => {
-                Type::new(self.ast,Node::TypeInt(true,16))
+                Type::new(self.ast,Node::IntType(true,16))
 	    }
 	    TokenType::I32 => {
-                Type::new(self.ast,Node::TypeInt(true,32))
+                Type::new(self.ast,Node::IntType(true,32))
 	    }
 	    TokenType::I64 => {
-                Type::new(self.ast,Node::TypeInt(true,64))
+                Type::new(self.ast,Node::IntType(true,64))
 	    }
 	    //
 	    TokenType::U8 => {
-                Type::new(self.ast,Node::TypeInt(false,8))
+                Type::new(self.ast,Node::IntType(false,8))
 	    }
 	    TokenType::U16 => {
-                Type::new(self.ast,Node::TypeInt(false,16))
+                Type::new(self.ast,Node::IntType(false,16))
 	    }
 	    TokenType::U32 => {
-                Type::new(self.ast,Node::TypeInt(false,32))
+                Type::new(self.ast,Node::IntType(false,32))
 	    }
 	    TokenType::U64 => {
-                Type::new(self.ast,Node::TypeInt(false,64))
+                Type::new(self.ast,Node::IntType(false,64))
 	    }
 	    //
 	    TokenType::Void => {
-                Type::new(self.ast,Node::TypeVoid)
+                Type::new(self.ast,Node::VoidType)
 	    }
 	    _ => {
 		return Err(Error::new(lookahead,"unknown token encountered"));
@@ -467,85 +467,85 @@ fn test_type_02() {
 #[test]
 fn test_type_03() {
     let ast = check_parse("type t = bool;");
-    assert!(matches!(ast.get(0),Node::TypeBool));
+    assert!(matches!(ast.get(0),Node::BoolType));
 }
 
 #[test]
 fn test_type_04() {
     let ast = check_parse("type nat = i8;");
-    assert_eq!(ast.get(0),&Node::TypeInt(true,8));
+    assert_eq!(ast.get(0),&Node::IntType(true,8));
 }
 
 #[test]
 fn test_type_05() {
     let ast = check_parse("type nat = i16;");
-    assert_eq!(ast.get(0),&Node::TypeInt(true,16));
+    assert_eq!(ast.get(0),&Node::IntType(true,16));
 }
 
 #[test]
 fn test_type_06() {
     let ast = check_parse("type nat = i32;");
-    assert_eq!(ast.get(0),&Node::TypeInt(true,32));
+    assert_eq!(ast.get(0),&Node::IntType(true,32));
 }
 
 #[test]
 fn test_type_07() {
     let ast = check_parse("type nat = i64;");
-    assert_eq!(ast.get(0),&Node::TypeInt(true,64));
+    assert_eq!(ast.get(0),&Node::IntType(true,64));
 }
 
 #[test]
 fn test_type_08() {
     let ast = check_parse("type nat = u8;");
-    assert_eq!(ast.get(0),&Node::TypeInt(false,8));
+    assert_eq!(ast.get(0),&Node::IntType(false,8));
 }
 
 #[test]
 fn test_type_09() {
     let ast = check_parse("type nat = u16;");
-    assert_eq!(ast.get(0),&Node::TypeInt(false,16));
+    assert_eq!(ast.get(0),&Node::IntType(false,16));
 }
 
 #[test]
 fn test_type_10() {
     let ast = check_parse("type nat = u32;");
-    assert_eq!(ast.get(0),&Node::TypeInt(false,32));
+    assert_eq!(ast.get(0),&Node::IntType(false,32));
 }
 
 #[test]
 fn test_type_11() {
     let ast = check_parse("type nat = u64;");
-    assert_eq!(ast.get(0),&Node::TypeInt(false,64));
+    assert_eq!(ast.get(0),&Node::IntType(false,64));
 }
 
 #[test]
 fn test_type_12() {
     let ast = check_parse("type nat = i32[];");
-    assert_eq!(ast.get(0),&Node::TypeInt(true,32));
-    assert_eq!(ast.get(1),&Node::TypeArray(Type{index:0}));
+    assert_eq!(ast.get(0),&Node::IntType(true,32));
+    assert_eq!(ast.get(1),&Node::ArrayType(Type{index:0}));
 }
 
 #[test]
 fn test_type_13() {
     let ast = check_parse("type nat = i32[][];");
-    assert_eq!(ast.get(0),&Node::TypeInt(true,32));
-    assert_eq!(ast.get(1),&Node::TypeArray(Type{index:0}));
-    assert_eq!(ast.get(2),&Node::TypeArray(Type{index:1}));
+    assert_eq!(ast.get(0),&Node::IntType(true,32));
+    assert_eq!(ast.get(1),&Node::ArrayType(Type{index:0}));
+    assert_eq!(ast.get(2),&Node::ArrayType(Type{index:1}));
 }
 
 #[test]
 fn test_type_14() {
     let ast = check_parse("type ref = &i16;");
-    assert_eq!(ast.get(0),&Node::TypeInt(true,16));
-    assert_eq!(ast.get(1),&Node::TypeReference(Type{index:0}));
+    assert_eq!(ast.get(0),&Node::IntType(true,16));
+    assert_eq!(ast.get(1),&Node::ReferenceType(Type{index:0}));
 }
 
 #[test]
 fn test_type_15() {
     let ast = check_parse("type ref = &&i16;");
-    assert_eq!(ast.get(0),&Node::TypeInt(true,16));
-    assert_eq!(ast.get(1),&Node::TypeReference(Type{index:0}));
-    assert_eq!(ast.get(2),&Node::TypeReference(Type{index:1}));
+    assert_eq!(ast.get(0),&Node::IntType(true,16));
+    assert_eq!(ast.get(1),&Node::ReferenceType(Type{index:0}));
+    assert_eq!(ast.get(2),&Node::ReferenceType(Type{index:1}));
 }
 
 #[test]
@@ -553,8 +553,8 @@ fn test_type_16() {
     let f = "f".to_string();
     //
     let ast = check_parse("type rec = {i64 f};");
-    assert_eq!(ast.get(0),&Node::TypeInt(true,64));
-    assert_eq!(ast.get(1),&Node::TypeRecord(vec![(Type{index:0},f)]));
+    assert_eq!(ast.get(0),&Node::IntType(true,64));
+    assert_eq!(ast.get(1),&Node::RecordType(vec![(Type{index:0},f)]));
 }
 
 #[test]
@@ -563,17 +563,17 @@ fn test_type_17() {
     let g = "g".to_string();
     //
     let ast = check_parse("type rec = {i32 f, u16 g};");
-    assert_eq!(ast.get(0),&Node::TypeInt(true,32));
-    assert_eq!(ast.get(1),&Node::TypeInt(false,16));
-    assert_eq!(ast.get(2),&Node::TypeRecord(vec![(Type{index:0},f),(Type{index:1},g)]));
+    assert_eq!(ast.get(0),&Node::IntType(true,32));
+    assert_eq!(ast.get(1),&Node::IntType(false,16));
+    assert_eq!(ast.get(2),&Node::RecordType(vec![(Type{index:0},f),(Type{index:1},g)]));
 }
 
 #[test]
 fn test_type_18() {
     let ast = check_parse("type rar = (&u32)[];");
-    assert_eq!(ast.get(0),&Node::TypeInt(false,32));
-    assert_eq!(ast.get(1),&Node::TypeReference(Type{index:0}));
-    assert_eq!(ast.get(2),&Node::TypeArray(Type{index:1}));
+    assert_eq!(ast.get(0),&Node::IntType(false,32));
+    assert_eq!(ast.get(1),&Node::ReferenceType(Type{index:0}));
+    assert_eq!(ast.get(2),&Node::ArrayType(Type{index:1}));
 }
 
 #[test]
@@ -582,11 +582,11 @@ fn test_type_19() {
     let g = "g".to_string();
     //
     let ast = check_parse("type rec = {&i8 f, u16[] g};");
-    assert_eq!(ast.get(0),&Node::TypeInt(true,8));
-    assert_eq!(ast.get(1),&Node::TypeReference(Type{index:0}));
-    assert_eq!(ast.get(2),&Node::TypeInt(false,16));
-    assert_eq!(ast.get(3),&Node::TypeArray(Type{index:2}));
-    assert_eq!(ast.get(4),&Node::TypeRecord(vec![(Type{index:1},f),(Type{index:3},g)]));
+    assert_eq!(ast.get(0),&Node::IntType(true,8));
+    assert_eq!(ast.get(1),&Node::ReferenceType(Type{index:0}));
+    assert_eq!(ast.get(2),&Node::IntType(false,16));
+    assert_eq!(ast.get(3),&Node::ArrayType(Type{index:2}));
+    assert_eq!(ast.get(4),&Node::RecordType(vec![(Type{index:1},f),(Type{index:3},g)]));
 }
 
 // ======================================================
