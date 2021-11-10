@@ -27,12 +27,12 @@ pub enum Node {
     // ExprBool(bool),
     // ExprInt(i32),
     // Types
-    // TypeArray(Type),
+    TypeArray(Type),
     TypeBool,
     TypeInt(bool,u8),
     TypeNull,
-    // TypeRecord(Vec<(Type,String)>),
-    // TypeReference(Type),
+    TypeRecord(Vec<(Type,String)>),
+    TypeReference(Type),
     TypeVoid
 }
 
@@ -94,7 +94,7 @@ pub struct Type { pub index: usize }
 impl Type {
     pub fn new(ast: &mut AbstractSyntaxTree, t : Node) -> Self {
         // Sanity check is declaration
-        assert!(Type::is(&t));
+        assert!(Type::is(ast,&t));
         // Create new node
         let index = ast.push(t).raw_index();
         // Done
@@ -102,12 +102,22 @@ impl Type {
     }
 
     /// Determine whether a given term is a type (or not).
-    pub fn is(t: &Node) -> bool {
+    pub fn is(ast: &AbstractSyntaxTree, t: &Node) -> bool {
         match t {
             Node::TypeBool => true,
             Node::TypeInt(_,_) => true,
             Node::TypeNull => true,
             Node::TypeVoid => true,
+            Node::TypeArray(t) => Type::is(ast,ast.get(t.index)),
+            Node::TypeReference(t) => Type::is(ast,ast.get(t.index)),
+            Node::TypeRecord(fs) => {
+                for (t,s) in fs {
+                    if !Type::is(ast,ast.get(t.index)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
             _ => false
         }
     }
@@ -138,6 +148,22 @@ impl From<Ref<'_,Node>> for Type {
 // =============================================================================
 // Debug
 // =============================================================================
+
+impl fmt::Display for Node {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Node::DeclType(n,t) => {
+                write!(f,"DeclType({},{})",n,t.index)
+            }
+            Node::TypeArray(t) => {
+                write!(f,"TypeArray({})",t.index)
+            }
+            // Default for those without children
+            _ => write!(f,"{:?}",self)
+        }
+    }
+}
+
 
 
 fn to_string<T:fmt::Display>(items : &[T]) -> String {

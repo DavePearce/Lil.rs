@@ -270,99 +270,93 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 		// Something went wrong
 		Err(Error::new(lookahead,"unexpected end-of-file"))
 	    }
-	    // TokenType::Ampersand => {
-	    // 	// Looks like a reference type
-	    // 	self.parse_type_ref()
-	    // }
-	    // TokenType::LeftCurly => {
-	    // 	// Looks like a record type
-	    // 	self.parse_type_record()
-	    // }
-	    // _ => {
-	    // 	// Could be an array type
-	    // 	self.parse_type_array()
-	    // }
+	    TokenType::Ampersand => {
+	    	// Looks like a reference type
+	    	self.parse_type_ref()
+	    }
+	    TokenType::LeftCurly => {
+	    	// Looks like a record type
+	    	self.parse_type_record()
+	    }
 	    _ => {
-		self.parse_type_base()
+	    	// Could be an array type
+	    	self.parse_type_array()
 	    }
 	}
     }
 
-    // /// Parse a reference type, such as `&i32`, `&(i32[])`, `&&u16`,
-    // /// etc.
-    // pub fn parse_type_ref(&mut self) -> Result<Type> {
-    // 	let mut n = 1;
-    // 	// "&"
-    // 	self.snap(TokenType::Ampersand)?;
-    // 	// Check for nested references
-    // 	while self.snap(TokenType::Ampersand).is_ok() {
-    // 	    n = n + 1;
-    // 	}
-    // 	// Type
-    // 	let mut t = self.parse_type_bracketed()?;
-    // 	// Unwind references
-    // 	for i in 0..n {
-    // 	    let index = self.ast.push(Node::TypeReference(t));
-    // 	    t = Type{index};
-    // 	}
-    // 	// Done
-    // 	Ok(t)
-    // }
+    /// Parse a reference type, such as `&i32`, `&(i32[])`, `&&u16`,
+    /// etc.
+    pub fn parse_type_ref(&mut self) -> Result<Type> {
+    	let mut n = 1;
+    	// "&"
+    	self.snap(TokenType::Ampersand)?;
+    	// Check for nested references
+    	while self.snap(TokenType::Ampersand).is_ok() {
+    	    n = n + 1;
+    	}
+    	// Type
+    	let mut t = self.parse_type_bracketed()?;
+    	// Unwind references
+    	for i in 0..n {
+            t = Type::new(self.ast,Node::TypeReference(t));
+    	}
+    	// Done
+    	Ok(t)
+    }
 
-    // /// Parse a record type, such as `{ i32 f }`, `{ bool f, u64 f }`,
-    // /// `{ &bool f, u64[] f }`, etc.
-    // pub fn parse_type_record(&mut self) -> Result<Type> {
-    // 	let mut fields : Vec<(Type,String)> = vec![];
-    // 	// "{"
-    // 	self.snap(TokenType::LeftCurly)?;
-    // 	// Keep going until a right brace
-    // 	while self.snap(TokenType::RightCurly).is_err() {
-    // 	    // Check if first time or not
-    // 	    if !fields.is_empty() {
-    // 		// Not first time, so match comma
-    // 		self.snap(TokenType::Comma)?;
-    // 	    }
-    // 	    // Type
-    // 	    let f_type = self.parse_type()?;
-    // 	    // Identifier
-    // 	    let f_name = self.parse_identifier()?;
-    // 	    //
-    // 	    fields.push((f_type,f_name));
-    // 	}
-    // 	// Done
-    // 	let index = self.ast.push(Node::TypeRecord(fields));
-    // 	Ok(Type{index})
-    // }
+    /// Parse a record type, such as `{ i32 f }`, `{ bool f, u64 f }`,
+    /// `{ &bool f, u64[] f }`, etc.
+    pub fn parse_type_record(&mut self) -> Result<Type> {
+    	let mut fields : Vec<(Type,String)> = vec![];
+    	// "{"
+    	self.snap(TokenType::LeftCurly)?;
+    	// Keep going until a right brace
+    	while self.snap(TokenType::RightCurly).is_err() {
+    	    // Check if first time or not
+    	    if !fields.is_empty() {
+    		// Not first time, so match comma
+    		self.snap(TokenType::Comma)?;
+    	    }
+    	    // Type
+    	    let f_type = self.parse_type()?;
+    	    // Identifier
+    	    let f_name = self.parse_identifier()?;
+    	    //
+    	    fields.push((f_type,f_name));
+    	}
+    	// Done
+    	Ok(Type::new(self.ast,Node::TypeRecord(fields)))
+    }
 
-    // /// Parse an array type, such as `i32[]`, `bool[][]`, etc.
-    // pub fn parse_type_array(&'b mut self) -> Result<Type> {
-    // 	// Type
-    // 	let mut t = self.parse_type_bracketed()?;
-    // 	// ([])*
-    // 	while self.snap(TokenType::LeftSquare).is_ok() {
-    // 	    self.snap(TokenType::RightSquare)?;
-    // 	    let index = self.ast.push(Node::TypeArray(t));
-    // 	    t = Type{index};
-    // 	}
-    // 	//
-    // 	Ok(t)
-    // }
+    /// Parse an array type, such as `i32[]`, `bool[][]`, etc.
+    pub fn parse_type_array(&'b mut self) -> Result<Type> {
+    	// Type
+    	let mut t = self.parse_type_bracketed()?;
+    	// ([])*
+    	while self.snap(TokenType::LeftSquare).is_ok() {
+    	    self.snap(TokenType::RightSquare)?;
+            t = Type::new(self.ast,Node::TypeArray(t));
+    	}
+    	//
+    	Ok(t)
+    }
 
-    // /// Parse a type which may (or may not) be bracketed.  For
-    // /// example, in `(&int)[]` the type `&int` is bracketed.
-    // pub fn parse_type_bracketed(&'b mut self) -> Result<Type> {
-    // 	// Try and match bracket!
-    // 	if self.snap(TokenType::LeftBrace).is_ok() {
-    // 	    // Bingo!
-    // 	    let typ_e = self.parse_type()?;
-    // 	    // Must match closing brace
-    // 	    self.snap(TokenType::RightBrace)?;
-    // 	    // Done
-    // 	    Ok(typ_e)
-    // 	} else {
-    // 	    self.parse_type_base()
-    // 	}
-    // }
+    /// Parse a type which may (or may not) be bracketed.  For
+    /// example, in `(&int)[]` the type `&int` is bracketed.
+    pub fn parse_type_bracketed(&'b mut self) -> Result<Type> {
+    	// Try and match bracket!
+    	if self.snap(TokenType::LeftBrace).is_ok() {
+    	    // Bingo!
+    	    let typ_e = self.parse_type()?;
+    	    // Must match closing brace
+    	    self.snap(TokenType::RightBrace)?;
+    	    // Done
+    	    Ok(typ_e)
+    	} else {
+    	    self.parse_type_base()
+    	}
+    }
 
     pub fn parse_type_base(&'b mut self) -> Result<Type> {
 	let lookahead = self.lexer.peek();
@@ -454,7 +448,7 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 }
 
 // ======================================================
-// Tests (Type DeclTypees)
+// Tests (Type Declarations)
 // ======================================================
 
 /// A dummy mapper which does nothing.
@@ -476,106 +470,127 @@ fn test_type_03() {
     assert!(matches!(ast.get(0),Node::TypeBool));
 }
 
-// #[test]
-// fn test_type_04() {
-//     let d = Parser::new("type nat = i8;").parse().unwrap();
-//     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Int8 ));
-// }
+#[test]
+fn test_type_04() {
+    let ast = check_parse("type nat = i8;");
+    assert_eq!(ast.get(0),&Node::TypeInt(true,8));
+}
 
-// #[test]
-// fn test_type_05() {
-//     let d = Parser::new("type nat = i16;").parse().unwrap();
-//     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Int16 ));
-// }
+#[test]
+fn test_type_05() {
+    let ast = check_parse("type nat = i16;");
+    assert_eq!(ast.get(0),&Node::TypeInt(true,16));
+}
 
-// #[test]
-// fn test_type_06() {
-//     let d = Parser::new("type nat = i32;").parse().unwrap();
-//     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Int32 ));
-// }
+#[test]
+fn test_type_06() {
+    let ast = check_parse("type nat = i32;");
+    assert_eq!(ast.get(0),&Node::TypeInt(true,32));
+}
 
-// #[test]
-// fn test_type_07() {
-//     let d = Parser::new("type nat = i64;").parse().unwrap();
-//     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Int64 ));
-// }
+#[test]
+fn test_type_07() {
+    let ast = check_parse("type nat = i64;");
+    assert_eq!(ast.get(0),&Node::TypeInt(true,64));
+}
 
-// #[test]
-// fn test_type_08() {
-//     let d = Parser::new("type nat = u8;").parse().unwrap();
-//     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Uint8 ));
-// }
+#[test]
+fn test_type_08() {
+    let ast = check_parse("type nat = u8;");
+    assert_eq!(ast.get(0),&Node::TypeInt(false,8));
+}
 
-// #[test]
-// fn test_type_09() {
-//     let d = Parser::new("type nat = u16;").parse().unwrap();
-//     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Uint16 ));
-// }
+#[test]
+fn test_type_09() {
+    let ast = check_parse("type nat = u16;");
+    assert_eq!(ast.get(0),&Node::TypeInt(false,16));
+}
 
-// #[test]
-// fn test_type_10() {
-//     let d = Parser::new("type nat = u32;").parse().unwrap();
-//     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Uint32 ));
-// }
+#[test]
+fn test_type_10() {
+    let ast = check_parse("type nat = u32;");
+    assert_eq!(ast.get(0),&Node::TypeInt(false,32));
+}
 
-// #[test]
-// fn test_type_11() {
-//     let d = Parser::new("type nat = u64;").parse().unwrap();
-//     assert_eq!(d,Decl::DeclType("nat".to_string(), Type::Uint64 ));
-// }
+#[test]
+fn test_type_11() {
+    let ast = check_parse("type nat = u64;");
+    assert_eq!(ast.get(0),&Node::TypeInt(false,64));
+}
 
-// #[test]
-// fn test_type_12() {
-//     let d = Parser::new("type intarr = i32[];").parse().unwrap();
-//     assert_eq!(d,Decl::DeclType("intarr".to_string(), Array(Type::Int32)));
-// }
+#[test]
+fn test_type_12() {
+    let ast = check_parse("type nat = i32[];");
+    assert_eq!(ast.get(0),&Node::TypeInt(true,32));
+    assert_eq!(ast.get(1),&Node::TypeArray(Type{index:0}));
+}
 
-// #[test]
-// fn test_type_13() {
-//     let d = Parser::new("type intarrarr = i32[][];").parse().unwrap();
-//     assert_eq!(d,Decl::DeclType("intarrarr".to_string(), Array(Array(Type::Int32))));
-// }
+#[test]
+fn test_type_13() {
+    let ast = check_parse("type nat = i32[][];");
+    assert_eq!(ast.get(0),&Node::TypeInt(true,32));
+    assert_eq!(ast.get(1),&Node::TypeArray(Type{index:0}));
+    assert_eq!(ast.get(2),&Node::TypeArray(Type{index:1}));
+}
 
-// #[test]
-// fn test_type_14() {
-//     let d = Parser::new("type r_int = &i16;").parse().unwrap();
-//     assert_eq!(d,Decl::DeclType("r_int".to_string(), Ref(Type::Int16)));
-// }
+#[test]
+fn test_type_14() {
+    let ast = check_parse("type ref = &i16;");
+    assert_eq!(ast.get(0),&Node::TypeInt(true,16));
+    assert_eq!(ast.get(1),&Node::TypeReference(Type{index:0}));
+}
 
-// #[test]
-// fn test_type_15() {
-//     let d = Parser::new("type r_int = &&i16;").parse().unwrap();
-//     assert_eq!(d,Decl::DeclType("r_int".to_string(), Ref(Ref(Type::Int16))));
-// }
+#[test]
+fn test_type_15() {
+    let ast = check_parse("type ref = &&i16;");
+    assert_eq!(ast.get(0),&Node::TypeInt(true,16));
+    assert_eq!(ast.get(1),&Node::TypeReference(Type{index:0}));
+    assert_eq!(ast.get(2),&Node::TypeReference(Type{index:1}));
+}
 
-// #[test]
-// fn test_type_16() {
-//     let d = Parser::new("type rec = {i64 f};").parse().unwrap();
-//     assert_eq!(d,Decl::DeclType("rec".to_string(), Record(&[(Type::Int64,"f".to_string())])));
-// }
+#[test]
+fn test_type_16() {
+    let f = "f".to_string();
+    //
+    let ast = check_parse("type rec = {i64 f};");
+    assert_eq!(ast.get(0),&Node::TypeInt(true,64));
+    assert_eq!(ast.get(1),&Node::TypeRecord(vec![(Type{index:0},f)]));
+}
 
-// #[test]
-// fn test_type_17() {
-//     let d = Parser::new("type rec = {i64 f, u32 g};").parse().unwrap();
-//     let fields = [(Type::Int64,"f".to_string()), (Type::Uint32,"g".to_string())];
-//     assert_eq!(d,Decl::DeclType("rec".to_string(), Record(&fields)));
-// }
+#[test]
+fn test_type_17() {
+    let f = "f".to_string();
+    let g = "g".to_string();
+    //
+    let ast = check_parse("type rec = {i32 f, u16 g};");
+    assert_eq!(ast.get(0),&Node::TypeInt(true,32));
+    assert_eq!(ast.get(1),&Node::TypeInt(false,16));
+    assert_eq!(ast.get(2),&Node::TypeRecord(vec![(Type{index:0},f),(Type{index:1},g)]));
+}
 
-// #[test]
-// fn test_type_18() {
-//     let d = Parser::new("type piarr = (&u32)[];").parse().unwrap();
-//     assert_eq!(d,Decl::DeclType("piarr".to_string(), Array(Ref(Type::Uint32))));
-// }
+#[test]
+fn test_type_18() {
+    let ast = check_parse("type rar = (&u32)[];");
+    assert_eq!(ast.get(0),&Node::TypeInt(false,32));
+    assert_eq!(ast.get(1),&Node::TypeReference(Type{index:0}));
+    assert_eq!(ast.get(2),&Node::TypeArray(Type{index:1}));
+}
 
-// #[test]
-// fn test_type_19() {
-//     let d = Parser::new("type rec = {&i8 f, u16[] g};").parse().unwrap();
-//     let fields = [(Ref(Type::Int8),"f".to_string()), (Array(Type::Uint16),"g".to_string())];
-//     assert_eq!(d,Decl::DeclType("rec".to_string(), Record(&fields)));
-// }
+#[test]
+fn test_type_19() {
+    let f = "f".to_string();
+    let g = "g".to_string();
+    //
+    let ast = check_parse("type rec = {&i8 f, u16[] g};");
+    assert_eq!(ast.get(0),&Node::TypeInt(true,8));
+    assert_eq!(ast.get(1),&Node::TypeReference(Type{index:0}));
+    assert_eq!(ast.get(2),&Node::TypeInt(false,16));
+    assert_eq!(ast.get(3),&Node::TypeArray(Type{index:2}));
+    assert_eq!(ast.get(4),&Node::TypeRecord(vec![(Type{index:1},f),(Type{index:3},g)]));
+}
 
 // ======================================================
-// Tests (DeclMethods)
+// Tests (Method Declarations)
 // ======================================================
 
 // #[test]
