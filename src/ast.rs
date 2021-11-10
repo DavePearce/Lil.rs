@@ -20,12 +20,12 @@ pub enum Node {
     TypeDecl(String,Type),
     MethodDecl(String,Type,Vec<Parameter>,Stmt),
     // Statements
-    // StmtAssert(Expr),
-    // StmtBlock(Vec<Stmt>),
-    // StmtSkip,
+    // AssertStmt(Expr),
+    BlockStmt(Vec<Stmt>),
+    SkipStmt,
     // Expressions
-    // ExprBool(bool),
-    // ExprInt(i32),
+    // BoolExpr(bool),
+    // IntExpr(i32),
     // Types
     ArrayType(Type),
     BoolType,
@@ -77,6 +77,26 @@ impl Decl {
 #[derive(Clone,Debug,PartialEq)]
 pub struct Stmt { pub index: usize }
 
+impl Stmt {
+    pub fn new(ast: &mut AbstractSyntaxTree, t : Node) -> Self {
+        // Sanity check is declaration
+        assert!(Stmt::is(&t));
+        // Create new node
+        let index = ast.push(t).raw_index();
+        // Done
+        Stmt{index}
+    }
+
+    /// Determine whether a given term is a declaration or not.
+    pub fn is(t: &Node) -> bool {
+        match t {
+	    Node::BlockStmt(_) => true,	    
+	    Node::SkipStmt => true,	    
+            _ => false
+        }
+    }
+}
+
 // =============================================================================
 // Expressions
 // =============================================================================
@@ -90,7 +110,6 @@ pub struct Expr { pub index: usize }
 
 #[derive(Clone,Debug,PartialEq)]
 pub struct Type { pub index: usize }
-
 
 impl Type {
     pub fn new(ast: &mut AbstractSyntaxTree, t : Node) -> Self {

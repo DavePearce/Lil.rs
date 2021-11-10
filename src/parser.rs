@@ -97,96 +97,91 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     /// Parse a method declaration of the form `Type name([Type
     /// Identifier]*) Stmt.Block`.
     pub fn parse_decl_method(&'b mut self) -> Result<Decl> {
-	todo!("reinstate me");
-	// // Type
-	// let ret_type = self.parse_type()?;
-	// // Identifier
-	// let name = self.parse_identifier()?;
-	// // "(" [Type Identifier]+ ")"
-	// let params = self.parse_decl_parameters()?;
-	// // "{" [Stmt]* "}"
-	// let body = self.parse_stmt_block()?;
-	// // // Apply source map
-	// // //let attr = (self.mapper)("test");
-	// //
-	// let idx = self.ast.push(Node::DeclMethod(name,ret_type,params,body));
-	// // //
-	// Ok(Ref::new(&self.ast,idx))
+	// Type
+	let ret_type = self.parse_type()?;
+	// Identifier
+	let name = self.parse_identifier()?;
+	// "(" [Type Identifier]+ ")"
+	let params = self.parse_decl_parameters()?;
+	// "{" [Stmt]* "}"
+	let body = self.parse_stmt_block()?;
+	// // Apply source map
+	// //let attr = (self.mapper)("test");
+	//
+	Ok(Decl::new(self.ast,Node::MethodDecl(name,ret_type,params,body)))
     }
 
-    // /// Parse a list of parameter declarations
-    // pub fn parse_decl_parameters(&mut self) -> Result<Vec<Parameter>> {
-    // 	let mut params : Vec<Parameter> = vec![];
-    // 	// "("
-    // 	self.snap(TokenType::LeftBrace)?;
-    // 	// Keep going until a right brace
-    // 	while self.snap(TokenType::RightBrace).is_err() {
-    // 	    // Check if first time or not
-    // 	    if !params.is_empty() {
-    // 		// Not first time, so match comma
-    // 		self.snap(TokenType::Comma)?;
-    // 	    }
-    // 	    // Type
-    // 	    let f_type = self.parse_type()?;
-    // 	    // Identifier
-    // 	    let f_name = self.parse_identifier()?;
-    // 	    //
-    // 	    params.push(Parameter{declared:f_type,name:f_name});
-    // 	}
-    // 	// Done
-    // 	Ok(params)
-    // }
+    /// Parse a list of parameter declarations
+    pub fn parse_decl_parameters(&mut self) -> Result<Vec<Parameter>> {
+    	let mut params : Vec<Parameter> = vec![];
+    	// "("
+    	self.snap(TokenType::LeftBrace)?;
+    	// Keep going until a right brace
+    	while self.snap(TokenType::RightBrace).is_err() {
+    	    // Check if first time or not
+    	    if !params.is_empty() {
+    		// Not first time, so match comma
+    		self.snap(TokenType::Comma)?;
+    	    }
+    	    // Type
+    	    let f_type = self.parse_type()?;
+    	    // Identifier
+    	    let f_name = self.parse_identifier()?;
+    	    //
+    	    params.push(Parameter{declared:f_type,name:f_name});
+    	}
+    	// Done
+    	Ok(params)
+    }
 
     // =========================================================================
     // Statements
     // =========================================================================
 
-    // /// Parse a block of zero or more statements surrounded by curly
-    // /// braces.  For example, `{ int x = 1; x = x + 1; }`.
-    // pub fn parse_stmt_block(&mut self) -> Result<Stmt> {
-    // 	let mut stmts : Vec<Stmt> = Vec::new();
-    // 	// "{"
-    // 	self.snap(TokenType::LeftCurly)?;
-    // 	// Keep going until a right curly
-    // 	while self.snap(TokenType::RightCurly).is_err() {
-    // 	    stmts.push(self.parse_stmt()?);
-    // 	}
-    // 	// Allocate statement block
-    // 	let index = self.ast.push(Node::StmtBlock(stmts));
-    // 	// Temporary for now
-    // 	Ok(Stmt{index})
-    // }
+    /// Parse a block of zero or more statements surrounded by curly
+    /// braces.  For example, `{ int x = 1; x = x + 1; }`.
+    pub fn parse_stmt_block(&mut self) -> Result<Stmt> {
+    	let mut stmts : Vec<Stmt> = Vec::new();
+    	// "{"
+    	self.snap(TokenType::LeftCurly)?;
+    	// Keep going until a right curly
+    	while self.snap(TokenType::RightCurly).is_err() {
+    	    stmts.push(self.parse_stmt()?);
+    	}
+    	// Done
+    	Ok(Stmt::new(self.ast,Node::BlockStmt(stmts)))
+    }
 
-    // /// Parse an arbitrary statement.
-    // pub fn parse_stmt(&mut self) -> Result<Stmt> {
-    // 	let lookahead = self.lexer.peek();
-    // 	//
-    // 	match lookahead.kind {
-    // 	    _ => self.parse_unit_stmt()
-    // 	}
-    // }
+    /// Parse an arbitrary statement.
+    pub fn parse_stmt(&mut self) -> Result<Stmt> {
+    	let lookahead = self.lexer.peek();
+    	//
+    	match lookahead.kind {
+    	    _ => self.parse_unit_stmt()
+    	}
+    }
 
-    // /// Parse a unit statement.  This one which does not contain other
-    // /// statements, and is terminated with a ";".
-    // pub fn parse_unit_stmt(&mut self) -> Result<Stmt> {
-    // 	let lookahead = self.lexer.peek();
-    // 	//
-    // 	let stmt = match lookahead.kind {
-    // 	    TokenType::Assert => {
-    // 	    	self.parse_stmt_assert()
-    // 	    }
-    // 	    TokenType::Skip => {
-    // 		self.parse_stmt_skip()
-    // 	    }
-    // 	    _ => {
-    // 		return Err(Error::new(lookahead,"unknown token encountered"));
-    // 	    }
-    // 	};
-    // 	// ";"
-    // 	self.snap(TokenType::SemiColon)?;
-    // 	// Done
-    // 	stmt
-    // }
+    /// Parse a unit statement.  This one which does not contain other
+    /// statements, and is terminated with a ";".
+    pub fn parse_unit_stmt(&mut self) -> Result<Stmt> {
+    	let lookahead = self.lexer.peek();
+    	//
+    	let stmt = match lookahead.kind {
+    	    // TokenType::Assert => {
+    	    // 	self.parse_stmt_assert()
+    	    // }
+    	    TokenType::Skip => {
+    		self.parse_stmt_skip()
+    	    }
+    	    _ => {
+    		return Err(Error::new(lookahead,"unknown token encountered"));
+    	    }
+    	};
+    	// ";"
+    	self.snap(TokenType::SemiColon)?;
+    	// Done
+    	stmt
+    }
 
     // pub fn parse_stmt_assert(&mut self) -> Result<Stmt> {
     // 	// "assert"
@@ -199,14 +194,12 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     // 	Ok(Stmt{index})
     // }
 
-    // pub fn parse_stmt_skip(&mut self) -> Result<Stmt> {
-    // 	// "skip"
-    // 	self.snap(TokenType::Skip)?;
-    // 	// Allocate node
-    // 	let index = self.ast.push(Node::StmtSkip);
-    // 	// Done
-    // 	Ok(Stmt{index})
-    // }
+    pub fn parse_stmt_skip(&mut self) -> Result<Stmt> {
+    	// "skip"
+    	self.snap(TokenType::Skip)?;
+    	// Done
+    	Ok(Stmt::new(self.ast,Node::SkipStmt))
+    }
 
     // =========================================================================
     // Expressions
@@ -593,89 +586,65 @@ fn test_type_19() {
 // Tests (Method Declarations)
 // ======================================================
 
-// #[test]
-// fn test_method_01() {
-//     let d = Parser::new("voi").parse().unwrap();
-//     assert_eq!(d,Decl::Error);
-// }
+#[test]
+fn test_method_01() {
+    check_error("voi");
+}
 
-// #[test]
-// fn test_method_02() {
-//     let d = Parser::new("void").parse().unwrap();
-//     assert_eq!(d,Decl::Error);
-// }
+#[test]
+fn test_method_02() {
+    check_error("void");
+}
 
-// #[test]
-// fn test_method_03() {
-//     let d = Parser::new("void f").parse().unwrap();
-//     assert_eq!(d,Decl::Error);
-// }
+#[test]
+fn test_method_03() {
+    check_error("void f");
+}
 
-// #[test]
-// fn test_method_04() {
-//     let d = Parser::new("void f(").parse().unwrap();
-//     assert_eq!(d,Decl::Error);
-// }
+#[test]
+fn test_method_04() {
+    check_error("void f(");
+}
 
-// #[test]
-// fn test_method_05() {
-//     let d = Parser::new("void f() {").parse().unwrap();
-//     assert_eq!(d,Decl::Error);
-// }
+#[test]
+fn test_method_05() {
+    check_error("void f() {");
+}
 
-// #[test]
-// fn test_method_06() {
-//     let d = Parser::new("void f() {}").parse().unwrap();
-//     //
-//     match d {
-// 	Decl::DeclMethod(n,r,ps,b) => {
-// 	    assert_eq!(n,"f".to_string());
-// 	    assert_eq!(r,Type::Void);
-// 	    assert!(ps.is_empty());
-// 	    assert_eq!(b,Stmt::Block(Vec::new()));
-// 	}
-// 	_ => {
-// 	    panic!("Invalid match");
-// 	}
-//     }
-// }
+#[test]
+fn test_method_06() {
+    let f = "f".to_string();    
+    let ast = check_parse("void f() {}");
+    assert_eq!(ast.get(0),&Node::VoidType);
+    assert_eq!(ast.get(1),&Node::BlockStmt(vec![]));
+    assert_eq!(ast.get(2),&Node::MethodDecl(f,Type{index:0},vec![],Stmt{index:1}));
+}
 
-// #[test]
-// fn test_method_07() {
-//     let d = Parser::new("bool f(i32 x) {}").parse().unwrap();
-//     //
-//     match d {
-// 	Decl::DeclMethod(n,r,ps,b) => {
-// 	    assert_eq!(n,"f".to_string());
-// 	    assert_eq!(r,Type::Bool);
-// 	    assert!(ps.len() == 1);
-// 	    assert!(ps[0] == (Type::Int32,"x".to_string()));
-// 	    assert_eq!(b,Stmt::Block(Vec::new()));
-// 	}
-// 	_ => {
-// 	    panic!("Invalid match");
-// 	}
-//     }
-// }
+#[test]
+fn test_method_07() {
+    let f = "f".to_string();
+    let x = "x".to_string();    
+    let ast = check_parse("void f(i32 x) {}");
+    assert_eq!(ast.get(0),&Node::VoidType);
+    assert_eq!(ast.get(1),&Node::IntType(true,32));    
+    assert_eq!(ast.get(2),&Node::BlockStmt(vec![]));
+    let params = vec![Parameter{declared:Type{index:1},name:x}];
+    assert_eq!(ast.get(3),&Node::MethodDecl(f,Type{index:0},params,Stmt{index:2}));
+}
 
-// #[test]
-// fn test_method_08() {
-//     let d = Parser::new("bool f(i32 i, bool b) {}").parse().unwrap();
-//     //
-//     match d {
-// 	Decl::DeclMethod(n,r,ps,b) => {
-// 	    assert_eq!(n,"f".to_string());
-// 	    assert_eq!(r,Type::Bool);
-// 	    assert!(ps.len() == 2);
-// 	    assert!(ps[0] == (Type::Int32,"i".to_string()));
-// 	    assert!(ps[1] == (Type::Bool,"b".to_string()));
-// 	    assert_eq!(b,Stmt::Block(Vec::new()));
-// 	}
-// 	_ => {
-// 	    panic!("Invalid match");
-// 	}
-//     }
-// }
+#[test]
+fn test_method_08() {
+    let f = "f".to_string();
+    let i = "i".to_string();
+    let b = "b".to_string();    
+    let ast = check_parse("bool f(i32 i, bool b) {}");
+    assert_eq!(ast.get(0),&Node::BoolType);
+    assert_eq!(ast.get(1),&Node::IntType(true,32));
+    assert_eq!(ast.get(2),&Node::BoolType);    
+    assert_eq!(ast.get(3),&Node::BlockStmt(vec![]));
+    let params = vec![Parameter{declared:Type{index:1},name:i},Parameter{declared:Type{index:2},name:b}];
+    assert_eq!(ast.get(4),&Node::MethodDecl(f,Type{index:0},params,Stmt{index:3}));
+}
 
 // #[test]
 // fn test_method_09() {
