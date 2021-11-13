@@ -12,6 +12,7 @@ use crate::ast::*;
 // =================================================================
 
 /// Identifies possible errors stemming from the parser.
+#[derive(Debug)]
 pub struct Error {
     pub start: usize,
     pub end: usize,
@@ -215,10 +216,10 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     		self.lexer.next();
     		Expr::new(self.ast,Node::BoolExpr(false))
     	    }
-    	    // TokenType::Integer => {
-    	    // 	self.lexer.next();
-    	    // 	self.ast.push(Node::ExprInt(lookahead.as_int()))
-    	    // }
+    	    TokenType::Integer => {
+    	    	self.lexer.next();
+		Expr::new(self.ast,Node::IntExpr(lookahead.as_int()))
+    	    }
     	    TokenType::LeftBrace => {
     	    	return self.parse_expr_bracketed()
     	    }

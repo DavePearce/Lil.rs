@@ -17,29 +17,31 @@ pub type Env = HashMap<String, Type>;
 
 /// Responsible for determine appropriate types for all statements and
 /// expressions used within a given AST.
-pub struct TypeChecker<F>
+pub struct TypeChecker<'a,F>
 where F : FnMut(usize,Type) {
+    ast: &'a AbstractSyntaxTree,
     globals : Env,
     mapper : F
 }
 
-impl<F> TypeChecker<F>
+impl<'a,F> TypeChecker<'a,F>
 where F : FnMut(usize,Type) {
 
-    pub fn new(mapper: F) -> Self {
+    pub fn new(ast: &'a AbstractSyntaxTree, mapper: F) -> Self {
 	let globals : Env = HashMap::new();
-	TypeChecker{globals,mapper}
+	TypeChecker{ast,globals,mapper}
     }
 
     // Declarations
     // -----------------------------------------------------------------
-/*        
-    pub fn check(&self, d : &Decl) -> Result<()> {
-	match d {
-	    Decl::TypeAlias(name,alias) => {
+    pub fn check(&self, d : Decl) -> Result<()> {
+	let n = self.ast.get(d.index);
+	//
+	match n {
+	    Node::TypeDecl(name,alias) => {
 	    	self.check_type_alias(name,alias)
 	    }
-	    Decl::Method(name,ret,params,body) => {
+	    Node::MethodDecl(name,ret,params,body) => {
 	    	self.check_method(name,ret,params,body)
 	    }
 	    _ => Err(internal_failure(0,"unknown declaration"))
@@ -73,11 +75,13 @@ where F : FnMut(usize,Type) {
     /// all expressions are used in a type-safe fashion.  For example,
     /// a statement `assert 1;` is not type safe.
     pub fn check_stmt(&self, env : &Env, stmt : &Stmt) -> Result<()> {
-	match stmt {
-	    Stmt::Assert(cond) => {
+	let n = self.ast.get(stmt.index);
+	//
+	match n {
+	    Node::AssertStmt(cond) => {
 		self.check_assert(env,&cond)
 	    }
-	    Stmt::Block(stmts) => {
+	    Node::BlockStmt(stmts) => {
 		self.check_block(env,&stmts)
 	    }
 	    _ => Err(internal_failure(0,"unknown statement"))
@@ -87,7 +91,7 @@ where F : FnMut(usize,Type) {
     pub fn check_assert(&self, env : &Env, cond : &Expr) -> Result<()> {
 	let t = self.check_expr(env,cond)?;
 	// Ensure boolean condition
-	self.check_subtype(&Type::Bool,&t)?;
+	self.check_subtype(Node::BoolType,&t)?;
 	//
 	Ok(())
     }
@@ -103,25 +107,19 @@ where F : FnMut(usize,Type) {
     // -----------------------------------------------------------------
     
     pub fn check_expr(&self, env : &Env, expr : &Expr) -> Result<Type> {
-	match expr {
-	    Expr::Variable(name) => {
-		self.check_variable(env,&name)
-	    }
-	    Expr::BoolLiteral(lit) => {
+	let n = self.ast.get(expr.index);
+	//
+	match n {
+	    Node::BoolExpr(lit) => {
 		self.check_boolean_literal(env,lit)
 	    }
 	    _ => Err(internal_failure(0,"unknown expression"))
 	}
     }
 
-    pub fn check_variable(&self, env : &Env, name: &String) -> Result<Type> {
-	println!("CHECK VAR {}",name);
-	Ok(Type::Int32)
-    }
-
     pub fn check_boolean_literal(&self, env : &Env, literal: &bool) -> Result<Type> {
 	println!("GOT HERE");
-	Ok(Type::Bool)
+	Ok(Type{index:0})
     }
 
     // Types
@@ -130,31 +128,29 @@ where F : FnMut(usize,Type) {
     /// Check a declared type makes sense.  For example, if a compound
     /// type contains a nominal type which is unknown.
     pub fn check_type(&self, t : &Type) -> Result<()> {
-	match t {
+	let n = self.ast.get(t.index);
+	//
+	match n {
 	    // Primitives all fine
-	    Type::Bool => { Ok(()) }
-	    Type::Null => { Ok(()) }
-	    Type::Int8 => { Ok(()) }
-	    Type::Int16  => { Ok(()) }
-	    Type::Int32 => { Ok(()) }
-	    Type::Int64 => { Ok(()) }
-	    Type::Uint8 => { Ok(()) }
-	    Type::Uint16 => { Ok(()) }
-	    Type::Uint32 => { Ok(()) }
-	    Type::Uint64 => { Ok(()) }
-	    Type::Void  => { Ok(()) }
+	    Node::BoolType => { Ok(()) }
+	    Node::NullType => { Ok(()) }
+	    Node::IntType(_,_) => { Ok(()) }
+	    Node::VoidType  => { Ok(()) }
 	    // Compounds depend on element
-	    Type::Array(bt) => {
-		self.check_type(bt)
+	    Node::ArrayType(bt) => {
+		self.check_type(&bt)
 	    }
-	    Type::Ref(bt) => {
-	    	self.check_type(bt)
+	    Node::ReferenceType(bt) => {
+	    	self.check_type(&bt)
 	    }
-	    Type::Record(fields) => {
+	    Node::RecordType(fields) => {
 	    	for (t,n) in fields {
-	    	    self.check_type(t)?;
+	    	    self.check_type(&t)?;
 	    	}
 	    	Ok(())
+	    }
+	    _ => {
+		panic!("do something");
 	    }
 	}
     }
@@ -167,5 +163,4 @@ where F : FnMut(usize,Type) {
 	    Err(expected_subtype(0))
 	}
     }
-*/
 }

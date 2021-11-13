@@ -25,7 +25,7 @@ pub enum Node {
     SkipStmt,
     // Expressions
     BoolExpr(bool),
-    // IntExpr(i32),
+    IntExpr(i32),
     // Types
     ArrayType(Type),
     BoolType,
@@ -40,7 +40,7 @@ pub enum Node {
 // Declarations
 // =============================================================================
 
-#[derive(Clone,Debug,PartialEq)]
+#[derive(Clone,Copy,Debug,PartialEq)]
 pub struct Decl { pub index: usize }
 
 /// Represents a parameter declaration in the source of a given method.
@@ -128,7 +128,7 @@ impl Expr {
 // Types
 // =============================================================================
 
-#[derive(Clone,Debug,PartialEq)]
+#[derive(Clone,Copy,Debug,PartialEq)]
 pub struct Type { pub index: usize }
 
 impl Type {
