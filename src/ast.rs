@@ -74,7 +74,7 @@ impl Decl {
 // Statements
 // =============================================================================
 
-#[derive(Clone,Debug,PartialEq)]
+#[derive(Clone,Copy,Debug,PartialEq)]
 pub struct Stmt { pub index: usize }
 
 impl Stmt {
@@ -102,7 +102,7 @@ impl Stmt {
 // Expressions
 // =============================================================================
 
-#[derive(Clone,Debug,PartialEq)]
+#[derive(Clone,Copy,Debug,PartialEq)]
 pub struct Expr { pub index: usize }
 
 impl Expr {
