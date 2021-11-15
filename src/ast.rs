@@ -26,6 +26,7 @@ pub enum Node {
     // Expressions
     BoolExpr(bool),
     IntExpr(i32),
+    VarExpr(String),
     // Types
     ArrayType(Type),
     BoolType,
@@ -118,7 +119,9 @@ impl Expr {
     /// Determine whether a given term is a declaration or not.
     pub fn is(t: &Node) -> bool {
         match t {
-	    Node::BoolExpr(_) => true,	    
+	    Node::BoolExpr(_) => true,
+	    Node::IntExpr(_) => true,
+	    Node::VarExpr(_) => true,
             _ => false
         }
     }

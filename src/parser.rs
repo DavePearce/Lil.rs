@@ -216,6 +216,10 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     		self.lexer.next();
     		Expr::new(self.ast,Node::BoolExpr(false))
     	    }
+	    TokenType::Identifier => {
+		let n = self.parse_identifier();
+		Expr::new(self.ast,Node::VarExpr(n.unwrap()))
+	    }
     	    TokenType::Integer => {
     	    	self.lexer.next();
 		Expr::new(self.ast,Node::IntExpr(lookahead.as_int()))

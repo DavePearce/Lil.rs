@@ -4,7 +4,9 @@ use std::fmt;
 pub enum ErrorCode {
     InternalFailure(String),
     /// Expected lhs type, got rhs type
-    ExpectedSubtype
+    ExpectedSubtype,
+    /// Access unknown variable
+    VariableNotFound
 }
 
 /// Identifies some form of syntax error on a given Abstract Syntax
@@ -28,6 +30,10 @@ pub fn expected_subtype(node: usize) -> SyntaxError {
     SyntaxError{node, errno: ErrorCode::ExpectedSubtype}
 }
 
+/// Construct a syntax error representing a variable not found error.
+pub fn variable_not_found(node: usize) -> SyntaxError {
+   SyntaxError{node, errno: ErrorCode::VariableNotFound}
+}
 
 /// Simple mechanism for printing an error code
 impl fmt::Display for ErrorCode {

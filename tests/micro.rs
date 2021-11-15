@@ -266,13 +266,14 @@ fn test_assert_09() {
     assert_eq!(ast.get(2),&Node::AssertStmt(Expr{index:1}));    
 }
 
-// #[test]
-// fn test_assert_10() {
-//     let b = "b".to_string();    
-//     let ast = check_parse("void f(bool b) { assert b; }");
-//     assert_eq!(ast.get(1),&Node::VarExpr(b.to_string()));        
-//     assert_eq!(ast.get(2),&Node::AssertStmt(Expr{index:1}));    
-// }
+#[test]
+fn test_assert_10() {
+    let b = "b".to_string();    
+    let ast = check_parse("void f(bool b) { assert b; }");
+    assert_eq!(ast.get(1),&Node::BoolType);    
+    assert_eq!(ast.get(2),&Node::VarExpr(b.to_string()));        
+    assert_eq!(ast.get(3),&Node::AssertStmt(Expr{index:2}));    
+}
 
 // ======================================================
 // Tests (Statements)

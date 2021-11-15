@@ -64,7 +64,7 @@ where F : FnMut(usize,Type) {
     	let mut env = self.globals.clone();
     	// Allocate parameters into environment
     	for p in params {
-    	    env.insert(p.name.clone(),p.declared.clone());
+    	    env.insert(p.name.clone(),p.declared);
     	}
     	// Check the body
     	let nbody = self.check_stmt(&env, body)?;
@@ -123,9 +123,12 @@ where F : FnMut(usize,Type) {
     pub fn check_expr(&mut self, env : &Env, expr : Expr) -> Result<Type> {
 	let n = self.ast.get(expr.index);
 	//
-	match *n {
+	match n {
 	    Node::BoolExpr(lit) => {
-		self.check_boolean_literal(env,lit)
+		self.check_boolean_literal(env,*lit)
+	    }
+	    Node::VarExpr(name) => {
+		self.check_variable_access(env,name)
 	    }
 	    _ => Err(internal_failure(0,"unknown expression"))
 	}
@@ -136,6 +139,17 @@ where F : FnMut(usize,Type) {
 	Ok(Type::new(self.ast,Node::BoolType))
     }
 
+    pub fn check_variable_access(&self, env : &Env, name: &String) -> Result<Type> {
+	let r = env.get(name);
+	//
+	match r {
+	    Some(t) => Ok(*t),
+	    None => {
+		panic!("variable not found");
+	    }
+	}
+    }
+    
     // Types
     // -----------------------------------------------------------------
     
