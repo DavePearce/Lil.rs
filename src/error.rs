@@ -1,6 +1,7 @@
 use std::fmt;
 
 /// Identifiers a particular kind of syntax error.
+#[derive(Clone,Debug)]
 pub enum ErrorCode {
     InternalFailure(String),
     /// Expected lhs type, got rhs type
@@ -11,6 +12,7 @@ pub enum ErrorCode {
 
 /// Identifies some form of syntax error on a given Abstract Syntax
 /// Tree node.  Every error is codified using a specific error code.
+#[derive(Clone,Debug)]
 pub struct SyntaxError {
     /// Identifies an AST node in the source file.
     pub node : usize,

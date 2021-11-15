@@ -269,10 +269,27 @@ fn test_assert_09() {
 #[test]
 fn test_assert_10() {
     let b = "b".to_string();    
+    let ast = check_error("void f() { assert b; }");
+}
+
+#[test]
+fn test_assert_11() {
+    let b = "b".to_string();    
     let ast = check_parse("void f(bool b) { assert b; }");
     assert_eq!(ast.get(1),&Node::BoolType);    
     assert_eq!(ast.get(2),&Node::VarExpr(b.to_string()));        
     assert_eq!(ast.get(3),&Node::AssertStmt(Expr{index:2}));    
+}
+
+#[test]
+fn test_assert_12() {
+    let i = "i".to_string();    
+    let ast = check_parse("void f(i32 i) { assert i < 0; }");
+    assert_eq!(ast.get(1),&Node::IntType(true,32));    
+    assert_eq!(ast.get(2),&Node::VarExpr(i.to_string()));
+    assert_eq!(ast.get(3),&Node::IntExpr(0));
+    //assert_eq!(ast.get(3),&Node::IntExpr(0));
+    //assert_eq!(ast.get(3),&Node::AssertStmt(Expr{index:2}));    
 }
 
 // ======================================================
@@ -291,6 +308,7 @@ fn check_parse(input: &str) -> Box<AbstractSyntaxTree> {
     let mut parser = Parser::new(input,&mut ast, source_mapper);
     // Parse input
     let d = parser.parse_decl();
+    println!("PARSED {:?}",d);
     assert!(!d.is_err());
     // Type input
     let mut typer = TypeChecker::new(&mut ast, type_mapper);

@@ -205,7 +205,20 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     // =========================================================================
 
     pub fn parse_expr(&mut self) -> Result<Expr> {
-    	self.parse_expr_term()
+    	let lhs = self.parse_expr_term()?;
+	// Check for binary expression
+    	let lookahead = self.lexer.peek();	
+	//
+	match lookahead.kind {
+	    TokenType::LeftAngle => {
+		self.lexer.next();
+		let rhs = self.parse_expr_term()?;
+		Ok(Expr::new(self.ast,Node::LessThanExpr(lhs,rhs)))
+	    }
+	    _ => {
+		Ok(lhs)
+	    }		
+	}
     }
 
     pub fn parse_expr_term(&mut self) -> Result<Expr> {

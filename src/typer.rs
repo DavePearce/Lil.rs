@@ -130,7 +130,7 @@ where F : FnMut(usize,Type) {
 	    Node::VarExpr(name) => {
 		self.check_variable_access(env,name)
 	    }
-	    _ => Err(internal_failure(0,"unknown expression"))
+	    _ => Err(internal_failure(expr.index, "unknown expression"))
 	}
 	// FIXME: how do we record type?
     }

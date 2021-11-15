@@ -25,6 +25,9 @@ pub enum Node {
     SkipStmt,
     // Expressions
     BoolExpr(bool),
+    EqualsExpr(Expr,Expr),
+    NotEqualsExpr(Expr,Expr),
+    LessThanExpr(Expr,Expr),    
     IntExpr(i32),
     VarExpr(String),
     // Types
@@ -120,6 +123,9 @@ impl Expr {
     pub fn is(t: &Node) -> bool {
         match t {
 	    Node::BoolExpr(_) => true,
+	    Node::EqualsExpr(_,_) => true,
+	    Node::LessThanExpr(_,_) => true,
+	    Node::NotEqualsExpr(_,_) => true,
 	    Node::IntExpr(_) => true,
 	    Node::VarExpr(_) => true,
             _ => false
