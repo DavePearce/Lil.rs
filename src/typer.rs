@@ -2,6 +2,7 @@ use std::result;
 use std::collections::HashMap;
 use syntactic_heap::Ref;
 use crate::ast::*;
+use crate::ast::Node::*;
 use crate::error::*;
 
 // =================================================================
@@ -101,7 +102,7 @@ where F : FnMut(usize,Type) {
     pub fn check_assert(&mut self, env : &Env, cond : Expr) -> Result<()> {
 	let t = self.check_expr(env,cond)?;
 	// Ensure boolean condition
-	self.check_bool_type(&t)?;
+	self.check_bool_type(t)?;
 	//
 	Ok(())
     }
@@ -127,6 +128,12 @@ where F : FnMut(usize,Type) {
 	    Node::BoolExpr(lit) => {
 		self.check_boolean_literal(env,*lit)
 	    }
+	    Node::IntExpr(lit) => {
+		self.check_integer_literal(env,*lit)
+	    }	   
+	    Node::LessThanExpr(lhs,rhs) => {
+		self.check_lessthan_comparator(env,*lhs,*rhs)
+	    }
 	    Node::VarExpr(name) => {
 		self.check_variable_access(env,name)
 	    }
@@ -137,6 +144,22 @@ where F : FnMut(usize,Type) {
 
     pub fn check_boolean_literal(&mut self, env : &Env, literal: bool) -> Result<Type> {
 	Ok(Type::new(self.ast,Node::BoolType))
+    }
+
+    pub fn check_integer_literal(&mut self, env : &Env, literal: i32) -> Result<Type> {
+	// FIXME: for now this is a conservative assumption.
+	Ok(Type::new(self.ast,Node::IntType(true,32)))
+    }
+
+    pub fn check_lessthan_comparator(&mut self, env : &Env, lhs: Expr, rhs: Expr) -> Result<Type> {
+	let lhs_t = self.check_expr(env,lhs)?;
+	let rhs_t = self.check_expr(env,rhs)?;
+	// Check lhs is integer (of some kind)
+	self.check_int_type(lhs_t)?;
+	// Check rhs has matching type
+	self.check_matching_types(&lhs_t, &rhs_t)?;
+	// Done
+	Ok(Type::new(self.ast,Node::BoolType))	
     }
 
     pub fn check_variable_access(&self, env : &Env, name: &String) -> Result<Type> {
@@ -160,18 +183,18 @@ where F : FnMut(usize,Type) {
 	//
 	match n {
 	    // Primitives all fine
-	    Node::BoolType => { Ok(()) }
-	    Node::NullType => { Ok(()) }
-	    Node::IntType(_,_) => { Ok(()) }
-	    Node::VoidType  => { Ok(()) }
+	    BoolType => { Ok(()) }
+	    NullType => { Ok(()) }
+	    IntType(_,_) => { Ok(()) }
+	    VoidType  => { Ok(()) }
 	    // Compounds depend on element
-	    Node::ArrayType(bt) => {
+	    ArrayType(bt) => {
 		self.check_type(&bt)
 	    }
-	    Node::ReferenceType(bt) => {
+	    ReferenceType(bt) => {
 	    	self.check_type(&bt)
 	    }
-	    Node::RecordType(fields) => {
+	    RecordType(fields) => {
 	    	for (t,n) in fields {
 	    	    self.check_type(&t)?;
 	    	}
@@ -183,24 +206,54 @@ where F : FnMut(usize,Type) {
 	}
     }
 
-    pub fn check_bool_type(&self, t : &Type) -> Result<()> {
+    /// Check two types have identical structure.
+    pub fn check_matching_types(&self, t1 : &Type, t2 : &Type) -> Result<()> {
+	let n1 : &Node = self.ast.get(t1.index);
+	let n2 : &Node = self.ast.get(t2.index);	
+	//
+	match (n1,n2) {
+	    // Primitives all fine
+	    (BoolType, BoolType) => { Ok(()) }
+	    (NullType, NullType) => { Ok(()) }
+	    (IntType(b1,w1), IntType(b2,w2)) if (b1 == b2 && w1 == w2) => { Ok(()) }
+	    (VoidType, VoidType) => { Ok(()) }
+	    // Compounds depend on elements
+	    (ArrayType(e1), ArrayType(e2)) => {
+		self.check_matching_types(e1,e2)
+	    }
+	    (ReferenceType(e1), ReferenceType(e2)) => {
+		self.check_matching_types(e1,e2)
+	    }
+	    _ => {
+		panic!("do something");
+	    }
+	}
+    }
+ 
+    
+    /// Check a given type is a boolean type.
+    pub fn check_bool_type(&self, t : Type) -> Result<()> {
 	let n = self.ast.get(t.index);
 	//	
 	match n {
 	    // Primitives all fine
-	    Node::BoolType => { Ok(()) }
+	    BoolType => { Ok(()) }
 	    _ => {
 		panic!("error, expected boolean");
 	    }
 	}
     }
-    
-    /// Check that one type (`sub`) is a subtype of another (`sup`).
-    pub fn check_subtype(&self, sup : &Type, sub: &Type) -> Result<()> {
-	if sup == sub {
-	    Ok(())
-	} else {
-	    Err(expected_subtype(0))
+
+    /// Check a given type is an integer type.
+    pub fn check_int_type(&self, t : Type) -> Result<()> {
+	let n = self.ast.get(t.index);
+	//	
+	match n {
+	    // Primitives all fine
+	    IntType(_,_) => { Ok(()) }
+	    _ => {
+		panic!("error, expected integer");
+	    }
 	}
     }
 }

@@ -8,12 +8,12 @@ use lil::typer::TypeChecker;
 
 #[test]
 fn test_type_01() {
-    check_error("type nat = i32");
+    check_parse_error("type nat = i32");
 }
 
 #[test]
 fn test_type_02() {
-    check_error("type nat i8;");
+    check_parse_error("type nat i8;");
 }
 
 #[test]
@@ -147,27 +147,27 @@ fn test_type_19() {
 
 #[test]
 fn test_method_01() {
-    check_error("voi");
+    check_parse_error("voi");
 }
 
 #[test]
 fn test_method_02() {
-    check_error("void");
+    check_parse_error("void");
 }
 
 #[test]
 fn test_method_03() {
-    check_error("void f");
+    check_parse_error("void f");
 }
 
 #[test]
 fn test_method_04() {
-    check_error("void f(");
+    check_parse_error("void f(");
 }
 
 #[test]
 fn test_method_05() {
-    check_error("void f() {");
+    check_parse_error("void f() {");
 }
 
 #[test]
@@ -211,12 +211,12 @@ fn test_method_08() {
 
 #[test]
 fn test_skip_01() {
-    let ast = check_error("void f() { ski }");
+    let ast = check_parse_error("void f() { ski }");
 }
 
 #[test]
 fn test_skip_02() {
-    let ast = check_error("void f() { skip }");    
+    let ast = check_parse_error("void f() { skip }");    
 }
 
 #[test]
@@ -232,17 +232,17 @@ fn test_skip_03() {
 
 #[test]
 fn test_assert_04() {
-    let ast = check_error("void f() { asse");
+    let ast = check_parse_error("void f() { asse");
 }
 
 #[test]
 fn test_assert_05() {
-    let ast = check_error("void f() { assert");
+    let ast = check_parse_error("void f() { assert");
 }
 
 #[test]
 fn test_assert_06() {
-    let ast = check_error("void f() { assert true }");
+    let ast = check_parse_error("void f() { assert true }");
 }
 
 #[test]
@@ -269,7 +269,7 @@ fn test_assert_09() {
 #[test]
 fn test_assert_10() {
     let b = "b".to_string();    
-    let ast = check_error("void f() { assert b; }");
+    let ast = check_type_error("void f() { assert b; }");
 }
 
 #[test]
@@ -319,9 +319,23 @@ fn check_parse(input: &str) -> Box<AbstractSyntaxTree> {
 }
 
 #[cfg(test)]
-fn check_error(input: &str) {
+fn check_parse_error(input: &str) {
     let mut ast = AbstractSyntaxTree::new();
     let mut p = Parser::new(input,&mut ast, source_mapper);
     let d = p.parse_decl();
     assert!(d.is_err());
+}
+
+#[cfg(test)]
+fn check_type_error(input: &str) {
+    let mut ast = AbstractSyntaxTree::new();
+    let mut parser = Parser::new(input,&mut ast, source_mapper);
+    // Parse input
+    let d = parser.parse_decl();
+    println!("PARSED {:?}",d);
+    assert!(!d.is_err());
+    // Type input
+    let mut typer = TypeChecker::new(&mut ast, type_mapper);
+    let r = typer.check(d.unwrap());
+    assert!(r.is_err());    
 }
