@@ -29,7 +29,7 @@ pub enum Node {
     BoolExpr(bool),
     EqualsExpr(Expr,Expr),
     NotEqualsExpr(Expr,Expr),
-    LessThanExpr(Expr,Expr),    
+    LessThanExpr(Expr,Expr),
     IntExpr(i32),
     VarExpr(Name),
     // Types
@@ -69,7 +69,7 @@ impl Decl {
     /// Determine whether a given term is a declaration or not.
     pub fn is(t: &Node) -> bool {
         match t {
-	    Node::MethodDecl(_,_,_,_) => true,	    
+	    Node::MethodDecl(_,_,_,_) => true,
             Node::TypeDecl(_,_) => true,
             _ => false
         }
@@ -96,9 +96,9 @@ impl Stmt {
     /// Determine whether a given term is a declaration or not.
     pub fn is(t: &Node) -> bool {
         match t {
-	    Node::AssertStmt(_) => true,	    
+	    Node::AssertStmt(_) => true,
 	    Node::BlockStmt(_) => true,
-	    Node::SkipStmt => true,	    
+	    Node::SkipStmt => true,
             _ => false
         }
     }
@@ -162,7 +162,7 @@ impl Type {
             Node::ArrayType(t) => Type::is(ast,ast.get(t.0)),
             Node::ReferenceType(t) => Type::is(ast,ast.get(t.0)),
             Node::RecordType(fs) => {
-                for (t,s) in fs {
+                for (t,_) in fs {
                     if !Type::is(ast,ast.get(t.0)) {
                         return false;
                     }

@@ -28,7 +28,7 @@ fn repl() {
     let mut ast = AbstractSyntaxTree::new();
     //
     loop {
-	write!(stdout,"> ");	
+	write!(stdout,"> ");
 	stdout.flush();
 	// Read input line
         stdin.read_line(&mut input);
@@ -44,8 +44,8 @@ fn repl() {
 	if d.is_err() {
 	    print_error(line,d.err().unwrap());
 	} else {
-	    let decl = d.ok().unwrap();
-	    // println!("Parsed: {}",&decl);	    
+	    let _decl = d.ok().unwrap();
+	    // println!("Parsed: {}",&decl);
 	    // println!("Parsed: {}",&ast);
 	    // // Now type check it!
 	    // let typing = TypeChecker::new(|i,t| type_map.map(i,t)).check(&ast);
@@ -55,7 +55,7 @@ fn repl() {
 	    // } else {
 	    // 	println!("Type checking suceeded");
 	    // }
-	}	  
+	}
 	//
 	input.clear();
     }
@@ -84,10 +84,10 @@ fn print_highlight<'a>(line: &'a str, start: usize, end: usize) {
     // Print out preamble
     print!("{}",indent);
     //
-    for i in start .. end {
+    for _ in start .. end {
 	print!("^");
     }
-    println!("");    
+    println!("");
 }
 
 /// Convert the start of a given line into corresponding whitespace.
@@ -96,5 +96,5 @@ fn print_highlight<'a>(line: &'a str, start: usize, end: usize) {
 /// the character as is (e.g. for a tab).
 fn to_whitespace(line: &str, offset: usize) -> String {
     // Personally, a loop has more clarity than this jiberish :)
-    line.char_indices().filter(|s| s.0 < offset).map(|s| " ").collect()
+    line.char_indices().filter(|s| s.0 < offset).map(|_| " ").collect()
 }

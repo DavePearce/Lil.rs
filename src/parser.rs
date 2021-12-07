@@ -1,11 +1,12 @@
 use std::result;
-use std::matches;
-use std::convert::From;
-use crate::lexer::EOF;
+use std::collections::HashMap;
 use crate::lexer::Lexer;
 use crate::lexer::Token;
 use crate::lexer::TokenType;
 use crate::ast::*;
+
+/// The parsing environment maps raw strings to on-tree names.
+type Env = HashMap<String, Name>;
 
 // =================================================================
 // Error
@@ -41,6 +42,8 @@ where F : FnMut(usize,&'a str) {
     lexer: Lexer<'a>,
     /// Provides access to the ast
     ast: &'a mut AbstractSyntaxTree,
+    /// Provides name cache
+    env: Env,
     /// Provides mechanism for source maps
     mapper : F
 
@@ -50,7 +53,8 @@ impl<'a,'b,F> Parser<'a,F>
 where 'a :'b, F : FnMut(usize,&'a str) {
 
     pub fn new(input: &'a str, ast: &'a mut AbstractSyntaxTree, mapper : F) -> Self {
-	Self { lexer: Lexer::new(input), ast, mapper }
+	let env : Env = HashMap::new();
+	Self { lexer: Lexer::new(input), ast, env, mapper }
     }
 
     // =========================================================================
@@ -91,10 +95,10 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 	let slice = &self.lexer.input[start.start .. end.end()];
 	// Apply source map
 	//let attr = (self.mapper)(slice);
-	// Done	
+	// Done
 	Ok(Decl::new(self.ast,Node::TypeDecl(name,typ_e)))
     }
-    
+
     /// Parse a method declaration of the form `Type name([Type
     /// Identifier]*) Stmt.Block`.
     pub fn parse_decl_method(&'b mut self) -> Result<Decl> {
@@ -207,7 +211,7 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     pub fn parse_expr(&mut self) -> Result<Expr> {
     	let lhs = self.parse_expr_term()?;
 	// Check for binary expression
-    	let lookahead = self.lexer.peek();	
+    	let lookahead = self.lexer.peek();
 	//
 	match lookahead.kind {
 	    TokenType::LeftAngle => {
@@ -217,7 +221,7 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 	    }
 	    _ => {
 		Ok(lhs)
-	    }		
+	    }
 	}
     }
 

@@ -1,6 +1,5 @@
 use std::result;
 use std::collections::HashMap;
-use syntactic_heap::Ref;
 use crate::ast::*;
 use crate::ast::Node::*;
 use crate::error::*;
@@ -46,7 +45,7 @@ where F : FnMut(usize,Type) {
 	    Node::MethodDecl(name,ret,params,body) => {
 		// FIXME: would be nice to avoid cloning here!  To do
 		// this, I think the most sensible approach is to put
-		// a collection kind into the AST.		
+		// a collection kind into the AST.
 	    	self.check_method(*name,*ret,params.clone(),*body)
 	    }
 	    _ => Err(internal_failure(0,"unknown declaration"))
@@ -75,7 +74,7 @@ where F : FnMut(usize,Type) {
 
     // Statements
     // -----------------------------------------------------------------
-    
+
     /// Check a given statement makes sense.  More specifically, that
     /// all expressions are used in a type-safe fashion.  For example,
     /// a statement `assert 1;` is not type safe.
@@ -117,10 +116,10 @@ where F : FnMut(usize,Type) {
     pub fn check_skip(&self, env : &Env) -> Result<()> {
 	Ok(())
     }
-    
+
     // Expressions
     // -----------------------------------------------------------------
-    
+
     pub fn check_expr(&mut self, env : &Env, expr : Expr) -> Result<Type> {
 	let n = self.ast.get(expr.index);
 	//
@@ -130,7 +129,7 @@ where F : FnMut(usize,Type) {
 	    }
 	    Node::IntExpr(lit) => {
 		self.check_integer_literal(env,*lit)
-	    }	   
+	    }
 	    Node::LessThanExpr(lhs,rhs) => {
 		self.check_lessthan_comparator(env,*lhs,*rhs)
 	    }
@@ -159,7 +158,7 @@ where F : FnMut(usize,Type) {
 	// Check rhs has matching type
 	self.check_matching_types(&lhs_t, &rhs_t)?;
 	// Done
-	Ok(Type::new(self.ast,Node::BoolType))	
+	Ok(Type::new(self.ast,Node::BoolType))
     }
 
     pub fn check_variable_access(&self, env : &Env, name: &Name) -> Result<Type> {
@@ -172,10 +171,10 @@ where F : FnMut(usize,Type) {
 	    }
 	}
     }
-    
+
     // Types
     // -----------------------------------------------------------------
-    
+
     /// Check a declared type makes sense.  For example, if a compound
     /// type contains a nominal type which is unknown.
     pub fn check_type(&self, t : &Type) -> Result<()> {
@@ -209,7 +208,7 @@ where F : FnMut(usize,Type) {
     /// Check two types have identical structure.
     pub fn check_matching_types(&self, t1 : &Type, t2 : &Type) -> Result<()> {
 	let n1 : &Node = self.ast.get(t1.0);
-	let n2 : &Node = self.ast.get(t2.0);	
+	let n2 : &Node = self.ast.get(t2.0);
 	//
 	match (n1,n2) {
 	    // Primitives all fine
@@ -229,12 +228,12 @@ where F : FnMut(usize,Type) {
 	    }
 	}
     }
- 
-    
+
+
     /// Check a given type is a boolean type.
     pub fn check_bool_type(&self, t : Type) -> Result<()> {
 	let n = self.ast.get(t.0);
-	//	
+	//
 	match n {
 	    // Primitives all fine
 	    BoolType => { Ok(()) }
@@ -247,7 +246,7 @@ where F : FnMut(usize,Type) {
     /// Check a given type is an integer type.
     pub fn check_int_type(&self, t : Type) -> Result<()> {
 	let n = self.ast.get(t.0);
-	//	
+	//
 	match n {
 	    // Primitives all fine
 	    IntType(_,_) => { Ok(()) }
