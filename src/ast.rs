@@ -16,9 +16,11 @@ pub type AbstractSyntaxTree = SyntacticHeap<Node>;
 
 #[derive(Clone,Debug,PartialEq)]
 pub enum Node {
+    // Base
+    Utf8(String),
     // Declarations
-    TypeDecl(String,Type),
-    MethodDecl(String,Type,Vec<Parameter>,Stmt),
+    TypeDecl(Name,Type),
+    MethodDecl(Name,Type,Vec<Parameter>,Stmt),
     // Statements
     AssertStmt(Expr),
     BlockStmt(Vec<Stmt>),
@@ -29,13 +31,13 @@ pub enum Node {
     NotEqualsExpr(Expr,Expr),
     LessThanExpr(Expr,Expr),    
     IntExpr(i32),
-    VarExpr(String),
+    VarExpr(Name),
     // Types
     ArrayType(Type),
     BoolType,
     IntType(bool,u8),
     NullType,
-    RecordType(Vec<(Type,String)>),
+    RecordType(Vec<(Type,Name)>),
     ReferenceType(Type),
     VoidType
 }
@@ -51,7 +53,7 @@ pub struct Decl { pub index: usize }
 #[derive(Clone,Debug,PartialEq)]
 pub struct Parameter {
     pub declared : Type,
-    pub name : String
+    pub name : Name
 }
 
 impl Decl {
@@ -138,7 +140,7 @@ impl Expr {
 // =============================================================================
 
 #[derive(Clone,Copy,Debug,PartialEq)]
-pub struct Type { pub index: usize }
+pub struct Type(pub usize);
 
 impl Type {
     pub fn new(ast: &mut AbstractSyntaxTree, t : Node) -> Self {
@@ -147,7 +149,7 @@ impl Type {
         // Create new node
         let index = ast.push(t).raw_index();
         // Done
-        Type{index}
+        Type(index)
     }
 
     /// Determine whether a given term is a type (or not).
@@ -157,11 +159,11 @@ impl Type {
             Node::IntType(_,_) => true,
             Node::NullType => true,
             Node::VoidType => true,
-            Node::ArrayType(t) => Type::is(ast,ast.get(t.index)),
-            Node::ReferenceType(t) => Type::is(ast,ast.get(t.index)),
+            Node::ArrayType(t) => Type::is(ast,ast.get(t.0)),
+            Node::ReferenceType(t) => Type::is(ast,ast.get(t.0)),
             Node::RecordType(fs) => {
                 for (t,s) in fs {
-                    if !Type::is(ast,ast.get(t.index)) {
+                    if !Type::is(ast,ast.get(t.0)) {
                         return false;
                     }
                 }
@@ -169,6 +171,23 @@ impl Type {
             }
             _ => false
         }
+    }
+}
+
+// =============================================================================
+// Names
+// =============================================================================
+
+#[derive(Clone,Copy,Debug,Hash,PartialEq,Eq)]
+pub struct Name(pub usize);
+
+impl Name {
+    pub fn new(ast: &mut AbstractSyntaxTree, s : &str) -> Self {
+	let node = Node::Utf8(s.to_string());
+        // Create new node
+        let index = ast.push(node).raw_index();
+        // Done
+        Name(index)
     }
 }
 
@@ -190,7 +209,13 @@ impl From<Ref<'_,Node>> for Stmt {
 
 impl From<Ref<'_,Node>> for Type {
     fn from(r: Ref<'_,Node>) -> Type {
-	Type{index:r.raw_index()}
+	Type(r.raw_index())
+    }
+}
+
+impl From<Ref<'_,Node>> for Name {
+    fn from(r: Ref<'_,Node>) -> Name {
+	Name(r.raw_index())
     }
 }
 
@@ -202,18 +227,16 @@ impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Node::TypeDecl(n,t) => {
-                write!(f,"TypeDecl({},{})",n,t.index)
+                write!(f,"TypeDecl({},{})",n.0,t.0)
             }
             Node::ArrayType(t) => {
-                write!(f,"ArrayType({})",t.index)
+                write!(f,"ArrayType({})",t.0)
             }
             // Default for those without children
             _ => write!(f,"{:?}",self)
         }
     }
 }
-
-
 
 fn to_string<T:fmt::Display>(items : &[T]) -> String {
     let mut s = String::new();

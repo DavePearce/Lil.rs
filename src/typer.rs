@@ -15,7 +15,7 @@ pub type Result<T> = result::Result<T, SyntaxError>;
 // Type Checker
 // =================================================================
 
-pub type Env = HashMap<String, Type>;
+pub type Env = HashMap<Name, Type>;
 
 /// Responsible for determine appropriate types for all statements and
 /// expressions used within a given AST.
@@ -41,31 +41,31 @@ where F : FnMut(usize,Type) {
 	//
 	match n {
 	    Node::TypeDecl(name,alias) => {
-	    	self.check_type_alias(name,*alias)
+	    	self.check_type_alias(*name,*alias)
 	    }
 	    Node::MethodDecl(name,ret,params,body) => {
 		// FIXME: would be nice to avoid cloning here!  To do
 		// this, I think the most sensible approach is to put
 		// a collection kind into the AST.		
-	    	self.check_method(name.clone(),*ret,params.clone(),*body)
+	    	self.check_method(*name,*ret,params.clone(),*body)
 	    }
 	    _ => Err(internal_failure(0,"unknown declaration"))
 	}
     }
 
-    pub fn check_type_alias(&self, name : &String, alias : Type) -> Result<()> {
+    pub fn check_type_alias(&self, name : Name, alias : Type) -> Result<()> {
 	// Sanity check alias type
 	self.check_type(&alias)?;
 	// Done!
 	Ok(())
     }
 
-    pub fn check_method(&mut self, name : String, ret: Type, params : Vec<Parameter>, body : Stmt) -> Result<()> {
+    pub fn check_method(&mut self, name : Name, ret: Type, params : Vec<Parameter>, body : Stmt) -> Result<()> {
     	// Clone environment, since we're going to update it.
     	let mut env = self.globals.clone();
     	// Allocate parameters into environment
     	for p in params {
-    	    env.insert(p.name.clone(),p.declared);
+    	    env.insert(p.name,p.declared);
     	}
     	// Check the body
     	let nbody = self.check_stmt(&env, body)?;
@@ -162,7 +162,7 @@ where F : FnMut(usize,Type) {
 	Ok(Type::new(self.ast,Node::BoolType))	
     }
 
-    pub fn check_variable_access(&self, env : &Env, name: &String) -> Result<Type> {
+    pub fn check_variable_access(&self, env : &Env, name: &Name) -> Result<Type> {
 	let r = env.get(name);
 	//
 	match r {
@@ -179,7 +179,7 @@ where F : FnMut(usize,Type) {
     /// Check a declared type makes sense.  For example, if a compound
     /// type contains a nominal type which is unknown.
     pub fn check_type(&self, t : &Type) -> Result<()> {
-	let n = self.ast.get(t.index);
+	let n = self.ast.get(t.0);
 	//
 	match n {
 	    // Primitives all fine
@@ -208,8 +208,8 @@ where F : FnMut(usize,Type) {
 
     /// Check two types have identical structure.
     pub fn check_matching_types(&self, t1 : &Type, t2 : &Type) -> Result<()> {
-	let n1 : &Node = self.ast.get(t1.index);
-	let n2 : &Node = self.ast.get(t2.index);	
+	let n1 : &Node = self.ast.get(t1.0);
+	let n2 : &Node = self.ast.get(t2.0);	
 	//
 	match (n1,n2) {
 	    // Primitives all fine
@@ -233,7 +233,7 @@ where F : FnMut(usize,Type) {
     
     /// Check a given type is a boolean type.
     pub fn check_bool_type(&self, t : Type) -> Result<()> {
-	let n = self.ast.get(t.index);
+	let n = self.ast.get(t.0);
 	//	
 	match n {
 	    // Primitives all fine
@@ -246,7 +246,7 @@ where F : FnMut(usize,Type) {
 
     /// Check a given type is an integer type.
     pub fn check_int_type(&self, t : Type) -> Result<()> {
-	let n = self.ast.get(t.index);
+	let n = self.ast.get(t.0);
 	//	
 	match n {
 	    // Primitives all fine

@@ -91,10 +91,10 @@ where 'a :'b, F : FnMut(usize,&'a str) {
 	let slice = &self.lexer.input[start.start .. end.end()];
 	// Apply source map
 	//let attr = (self.mapper)(slice);
-	// Done
+	// Done	
 	Ok(Decl::new(self.ast,Node::TypeDecl(name,typ_e)))
     }
-
+    
     /// Parse a method declaration of the form `Type name([Type
     /// Identifier]*) Stmt.Block`.
     pub fn parse_decl_method(&'b mut self) -> Result<Decl> {
@@ -317,7 +317,7 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     /// Parse a record type, such as `{ i32 f }`, `{ bool f, u64 f }`,
     /// `{ &bool f, u64[] f }`, etc.
     pub fn parse_type_record(&mut self) -> Result<Type> {
-    	let mut fields : Vec<(Type,String)> = vec![];
+    	let mut fields : Vec<(Type,Name)> = vec![];
     	// "{"
     	self.snap(TokenType::LeftCurly)?;
     	// Keep going until a right brace
@@ -422,9 +422,10 @@ where 'a :'b, F : FnMut(usize,&'a str) {
     // Misc
     // =========================================================================
 
-    pub fn parse_identifier(&mut self) -> Result<String> {
+    pub fn parse_identifier(&mut self) -> Result<Name> {
 	let tok = self.snap(TokenType::Identifier)?;
-	Ok(tok.as_string())
+	// FIXME: should employ cache!
+	Ok(Name::new(self.ast,&tok.content))
     }
 
     // =========================================================================
