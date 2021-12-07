@@ -15,11 +15,12 @@ use crate::source_map::SourceMap;
 use crate::error::SyntaxError;
 use crate::ast::AbstractSyntaxTree;
 
-fn main() {
-    repl();
+fn main() -> Result<(),io::Error> {
+    repl()?;
+    Ok(())
 }
 
-fn repl() {
+fn repl() -> Result<(),io::Error> {
     let stdin = io::stdin();
     let mut stdout = io::stdout();
     // Buffer to hold input before parsing.
@@ -29,9 +30,9 @@ fn repl() {
     //
     loop {
 	write!(stdout,"> ");
-	stdout.flush();
+	stdout.flush()?;
 	// Read input line
-        stdin.read_line(&mut input);
+    stdin.read_line(&mut input)?;
 	let line = input.as_str();
 	// Construct temporary source map
 	let mut source_map = SourceMap::new(line);
