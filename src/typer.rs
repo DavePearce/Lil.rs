@@ -79,7 +79,7 @@ where F : FnMut(usize,Type) {
     /// all expressions are used in a type-safe fashion.  For example,
     /// a statement `assert 1;` is not type safe.
     pub fn check_stmt(&mut self, env : &Env, stmt : Stmt) -> Result<()> {
-	let n = self.ast.get(stmt.index);
+	let n = self.ast.get(stmt.0);
 	//
 	match n {
 	    Node::AssertStmt(cond) => {
@@ -121,7 +121,7 @@ where F : FnMut(usize,Type) {
     // -----------------------------------------------------------------
 
     pub fn check_expr(&mut self, env : &Env, expr : Expr) -> Result<Type> {
-	let n = self.ast.get(expr.index);
+	let n = self.ast.get(expr.0);
 	//
 	match n {
 	    Node::BoolExpr(lit) => {
@@ -136,7 +136,7 @@ where F : FnMut(usize,Type) {
 	    Node::VarExpr(name) => {
 		self.check_variable_access(env,name)
 	    }
-	    _ => Err(internal_failure(expr.index, "unknown expression"))
+	    _ => Err(internal_failure(expr.0, "unknown expression"))
 	}
 	// FIXME: how do we record type?
     }

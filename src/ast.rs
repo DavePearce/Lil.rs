@@ -1,5 +1,4 @@
 use std::fmt;
-use std::vec;
 use std::convert::From;
 use syntactic_heap::SyntacticHeap;
 use syntactic_heap::Ref;
@@ -81,7 +80,7 @@ impl Decl {
 // =============================================================================
 
 #[derive(Clone,Copy,Debug,PartialEq)]
-pub struct Stmt { pub index: usize }
+pub struct Stmt(pub usize);
 
 impl Stmt {
     pub fn new(ast: &mut AbstractSyntaxTree, t : Node) -> Self {
@@ -90,7 +89,7 @@ impl Stmt {
         // Create new node
         let index = ast.push(t).raw_index();
         // Done
-        Stmt{index}
+        Stmt(index)
     }
 
     /// Determine whether a given term is a declaration or not.
@@ -109,7 +108,7 @@ impl Stmt {
 // =============================================================================
 
 #[derive(Clone,Copy,Debug,PartialEq)]
-pub struct Expr { pub index: usize }
+pub struct Expr(pub usize);
 
 impl Expr {
     pub fn new(ast: &mut AbstractSyntaxTree, t : Node) -> Self {
@@ -118,7 +117,7 @@ impl Expr {
         // Create new node
         let index = ast.push(t).raw_index();
         // Done
-        Expr{index}
+        Expr(index)
     }
 
     /// Determine whether a given term is a declaration or not.
@@ -203,7 +202,7 @@ impl From<Ref<'_,Node>> for Decl {
 
 impl From<Ref<'_,Node>> for Stmt {
     fn from(r: Ref<'_,Node>) -> Stmt {
-	Stmt{index:r.raw_index()}
+	Stmt(r.raw_index())
     }
 }
 
